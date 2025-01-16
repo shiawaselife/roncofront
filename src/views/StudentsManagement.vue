@@ -180,9 +180,9 @@
                 <table class="w-full border-collapse text-sm">
                   <thead class="bg-gray-50">
                     <tr>
-                      <th class="border p-2 text-left">날짜</th>
+                      <th class="border p-2 text-center">날짜</th>
                       <th class="border p-2 text-center">요일</th>
-                      <th class="border p-2 text-left">등원시간</th>
+                      <th class="border p-2 text-center">등원시간</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -191,9 +191,9 @@
                       :key="attendance.id"
                       class="hover:bg-gray-50"
                     >
-                      <td class="border p-2">{{ formatDate(attendance.date) }}</td>
+                      <td class="border p-2 text-center">{{ formatDate(attendance.date) }}</td>
                       <td class="border p-2 text-center">{{ koreanDayOfWeek(attendance.date) }}</td>
-                      <td class="border p-2">{{ formatTime(attendance.createdAt) }}</td>
+                      <td class="border p-2 text-center">{{ formatTime(attendance.createdAt) }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -271,12 +271,12 @@
               </select>
             </div>
 
-            <div v-if="makeupClassList.length === 0" class="text-sm text-gray-500">
+            <div v-if="filteredMakeupClasses.length === 0" class="text-sm text-gray-500">
               보강 수업이 없습니다.
             </div>
             <ul class="space-y-2" v-else>
               <li 
-                v-for="cls in makeupClassList" 
+                v-for="cls in filteredMakeupClasses" 
                 :key="cls.id"
                 class="flex items-center justify-between bg-gray-50 p-2 rounded"
               >
@@ -464,7 +464,6 @@ async function fetchMakeupClasses(studentId) {
   try {
     const res = await axios.get('/api/classes/makeup', {
       params: {
-        studentId,
         range: selectedRange.value,
         order: selectedOrder.value
       }
@@ -522,6 +521,11 @@ function nextPage() {
 // 검색어가 변경되면 첫 페이지로 이동
 watch(searchQuery, () => {
   currentPage.value = 1
+})
+
+const filteredMakeupClasses = computed(() => {
+  if (!selected.value) return []
+  return makeupClassList.value.filter(cls => cls.student?.id === selected.value.id)
 })
 
 </script>
