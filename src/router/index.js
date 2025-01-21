@@ -3,6 +3,7 @@ import Style from '@/views/StyleView.vue'
 import Home from '@/views/HomeView.vue'
 import StudentInfoView from '@/views/StudentInfoView.vue'
 import { comma } from 'postcss/lib/list'
+import Portfolios from '@/views/Portfolios.vue'
 
 const routes = [
   {
@@ -170,6 +171,14 @@ const routes = [
     path: '/portfolios',
     name: 'portfolios',
     component: () => import('@/views/Portfolios.vue')
+  },
+  {
+    meta: {
+      title: 'Blog Rank'
+    },
+    path: '/blogrank',
+    name: 'blogrank',
+    component: () => import('@/views/BlogRank.vue')
   }
 ]
 

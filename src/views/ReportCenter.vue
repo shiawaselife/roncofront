@@ -101,14 +101,6 @@
                 <div class="text-sm text-gray-600">{{ formatDate(portfolio.createdDate) }}</div>
               </li>
             </ul>
-            <div class="text-right mt-2">
-              <RouterLink to="/portfolios" class="bg-purple-500 text-white px-3 py-1 rounded text-sm inline-flex items-center">
-                <svg class="w-4 h-4 mr-1" viewBox="0 0 24 24">
-                  <path fill="currentColor" :d="mdiUpload"/>
-                </svg>
-                업로드
-              </RouterLink>
-            </div>
           </div>
         </div>
 

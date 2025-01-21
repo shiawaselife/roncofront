@@ -1,4 +1,3 @@
-<!-- LearningReports.vue -->
 <template>
   <LayoutAuthenticated>
     <SectionMain>
@@ -36,7 +35,7 @@
         </div>
 
         <!-- 보고서 작성 모달 -->
-        <Modal v-if="showCreateForm" @close="showCreateForm = false">
+        <Modal :show="showCreateForm" @close="showCreateForm = false">
           <template #title>새 학습 보고서 작성</template>
           <template #content>
             <form @submit.prevent="createReport" class="space-y-4">
@@ -79,7 +78,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Modal } from '@/components/ui'
+import axios from 'axios'
+import Modal from '@/components/Modal.vue'
 import { mdiPlus } from '@mdi/js'
 import LayoutAuthenticated from '@/layouts/LayoutAuthenticated.vue'
 import SectionMain from '@/components/SectionMain.vue'
@@ -88,52 +88,56 @@ const showCreateForm = ref(false)
 const students = ref([])
 const reports = ref([])
 const newReport = ref({
-  studentId: '',
-  subject: '',
-  progress: 0,
-  content: ''
+ studentId: '',
+ subject: '',
+ progress: 0,
+ content: ''
 })
 
 const formatDate = (date) => {
-  return new Date(date).toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  })
+ return new Date(date).toLocaleDateString('ko-KR', {
+   year: 'numeric',
+   month: '2-digit',
+   day: '2-digit'
+ })
 }
 
 const createReport = async () => {
-  try {
-    await fetch('/api/learning-reports', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(newReport.value)
-    })
-    showCreateForm.value = false
-    loadReports()
-  } catch (error) {
-    console.error('Failed to create report:', error)
-  }
+ try {
+   await axios.post('/api/learning-reports', newReport.value)
+   showCreateForm.value = false
+   loadReports()
+ } catch (error) {
+   console.error('Failed to create report:', error)
+ }
 }
 
 const loadReports = async () => {
-  try {
-    const response = await fetch('/api/learning-reports')
-    reports.value = await response.json()
-  } catch (error) {
-    console.error('Failed to load reports:', error)
-  }
+ try {
+   const response = await axios.get('/api/learning-reports')
+   reports.value = response.data
+ } catch (error) {
+   console.error('Failed to load reports:', error)
+ }
+}
+
+const loadStudents = async () => {
+ try {
+   const response = await axios.get('/api/students')
+   students.value = response.data
+ } catch (error) {
+   console.error('Failed to load students:', error)
+ }
 }
 
 onMounted(async () => {
-  try {
-    const response = await fetch('/api/students')
-    students.value = await response.json()
-    loadReports()
-  } catch (error) {
-    console.error('Failed to load students:', error)
-  }
+ try {
+   await Promise.all([
+     loadStudents(),
+     loadReports()
+   ])
+ } catch (error) {
+   console.error('Failed to load initial data:', error)
+ }
 })
 </script>

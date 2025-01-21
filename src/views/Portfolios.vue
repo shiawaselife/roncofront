@@ -1,4 +1,3 @@
-<!-- Portfolios.vue -->
 <template>
   <LayoutAuthenticated>
     <SectionMain>
@@ -21,19 +20,38 @@
                 <h3 class="font-bold text-lg">{{ portfolio.title }}</h3>
                 <p class="text-sm text-gray-600">{{ portfolio.student.name }}</p>
               </div>
-              <span class="text-sm text-gray-500">{{ formatDate(portfolio.createdDate) }}</span>
+              <div class="flex items-start space-x-2">
+                <span class="text-sm text-gray-500">{{ formatDate(portfolio.createdDate) }}</span>
+                <!-- 삭제 버튼 -->
+                <button @click="deletePortfolio(portfolio.id)" 
+                        class="text-red-500 hover:text-red-700">
+                  <svg class="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="currentColor" :d="mdiDelete" />
+                  </svg>
+                </button>
+              </div>
             </div>
             <p class="mt-2 text-sm text-gray-700">{{ portfolio.description }}</p>
-            <div class="mt-3">
+            <div class="mt-3 flex items-center justify-between">
               <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">
                 {{ portfolio.projectType }}
               </span>
+              <!-- 파일 다운로드 링크 -->
+              <a v-if="portfolio.filePath" 
+                 :href="'/api/portfolios/' + portfolio.id + '/file'"
+                 target="_blank"
+                 class="text-blue-500 hover:text-blue-700 text-sm flex items-center">
+                <svg class="w-4 h-4 mr-1" viewBox="0 0 24 24">
+                  <path fill="currentColor" :d="mdiDownload" />
+                </svg>
+                파일 다운로드
+              </a>
             </div>
           </div>
         </div>
 
         <!-- 포트폴리오 업로드 모달 -->
-        <Modal v-if="showCreateForm" @close="showCreateForm = false">
+        <Modal :show="showCreateForm" @close="showCreateForm = false">
           <template #title>포트폴리오 업로드</template>
           <template #content>
             <form @submit.prevent="createPortfolio" class="space-y-4">
@@ -80,13 +98,13 @@
       </div>
     </SectionMain>
   </LayoutAuthenticated>
-  
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Modal } from '@/components/ui'
-import { mdiUpload } from '@mdi/js'
+import axios from 'axios'
+import Modal from '@/components/Modal.vue'
+import { mdiUpload, mdiDelete, mdiDownload } from '@mdi/js'
 import LayoutAuthenticated from '@/layouts/LayoutAuthenticated.vue'
 import SectionMain from '@/components/SectionMain.vue'
 
@@ -94,59 +112,89 @@ const showCreateForm = ref(false)
 const students = ref([])
 const portfolios = ref([])
 const newPortfolio = ref({
-  studentId: '',
-  title: '',
-  projectType: '',
-  description: '',
-  file: null
+ studentId: '',
+ title: '',
+ projectType: '',
+ description: '',
+ file: null
 })
 
 const formatDate = (date) => {
-  return new Date(date).toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  })
+ return new Date(date).toLocaleDateString('ko-KR', {
+   year: 'numeric',
+   month: '2-digit',
+   day: '2-digit'
+ })
 }
 
 const handleFileUpload = (event) => {
-  newPortfolio.value.file = event.target.files[0]
+ newPortfolio.value.file = event.target.files[0]
 }
 
 const createPortfolio = async () => {
-  try {
-    const formData = new FormData()
-    Object.keys(newPortfolio.value).forEach(key => {
-      formData.append(key, newPortfolio.value[key])
-    })
-    
-    await fetch('/api/portfolios', {
-      method: 'POST',
-      body: formData
-    })
-    showCreateForm.value = false
-    loadPortfolios()
-  } catch (error) {
-    console.error('Failed to create portfolio:', error)
-  }
+ try {
+   const formData = new FormData()
+   Object.keys(newPortfolio.value).forEach(key => {
+     formData.append(key, newPortfolio.value[key])
+   })
+   
+   await axios.post('/api/portfolios', formData, {
+     headers: {
+       'Content-Type': 'multipart/form-data'
+     }
+   })
+   showCreateForm.value = false
+   loadPortfolios()
+   // 폼 초기화
+   newPortfolio.value = {
+     studentId: '',
+     title: '',
+     projectType: '',
+     description: '',
+     file: null
+   }
+ } catch (error) {
+   console.error('Failed to create portfolio:', error)
+ }
+}
+
+const deletePortfolio = async (id) => {
+ if (!confirm('정말로 이 포트폴리오를 삭제하시겠습니까?')) return
+ 
+ try {
+   await axios.delete(`/api/portfolios/${id}`)
+   loadPortfolios()  // 목록 새로고침
+ } catch (error) {
+   console.error('Failed to delete portfolio:', error)
+ }
 }
 
 const loadPortfolios = async () => {
-  try {
-    const response = await fetch('/api/portfolios')
-    portfolios.value = await response.json()
-  } catch (error) {
-    console.error('Failed to load portfolios:', error)
-  }
+ try {
+   const response = await axios.get('/api/portfolios')
+   portfolios.value = response.data
+ } catch (error) {
+   console.error('Failed to load portfolios:', error)
+ }
+}
+
+const loadStudents = async () => {
+ try {
+   const response = await axios.get('/api/students')
+   students.value = response.data
+ } catch (error) {
+   console.error('Failed to load students:', error)
+ }
 }
 
 onMounted(async () => {
-  try {
-    const response = await fetch('/api/students')
-    students.value = await response.json()
-    loadPortfolios()
-  } catch (error) {
-    console.error('Failed to load students:', error)
-  }
+ try {
+   await Promise.all([
+     loadStudents(),
+     loadPortfolios()
+   ])
+ } catch (error) {
+   console.error('Failed to load initial data:', error)
+ }
 })
 </script>

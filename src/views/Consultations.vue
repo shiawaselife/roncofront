@@ -37,7 +37,7 @@
         </div>
 
         <!-- 상담 추가 모달 -->
-        <Modal v-if="showCreateForm" @close="showCreateForm = false">
+        <Modal :show="showCreateForm" @close="showCreateForm = false">
           <template #title>상담 추가</template>
           <template #content>
             <form @submit.prevent="createConsultation" class="space-y-4">
@@ -85,7 +85,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Modal } from '@/components/ui'
+import axios from 'axios'
+import Modal from '@/components/Modal.vue'
 import { mdiPlus } from '@mdi/js'
 
 import LayoutAuthenticated from '@/layouts/LayoutAuthenticated.vue'
@@ -124,13 +125,7 @@ const formatDate = (date) => {
 
 const createConsultation = async () => {
   try {
-    await fetch('/api/consultations', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(newConsultation.value)
-    })
+    await axios.post('/api/consultations', newConsultation.value)
     showCreateForm.value = false
     loadConsultations()
   } catch (error) {
@@ -140,20 +135,26 @@ const createConsultation = async () => {
 
 const loadConsultations = async () => {
   try {
-    const response = await fetch('/api/consultations')
-    consultations.value = await response.json()
+    const response = await axios.get('/api/consultations')
+    consultations.value = response.data
   } catch (error) {
     console.error('Failed to load consultations:', error)
   }
 }
 
-onMounted(async () => {
+const loadStudents = async () => {
   try {
-    const response = await fetch('/api/students')
-    students.value = await response.json()
-    loadConsultations()
+    const response = await axios.get('/api/students')
+    students.value = response.data
   } catch (error) {
     console.error('Failed to load students:', error)
   }
+}
+
+onMounted(async () => {
+  await Promise.all([
+    loadStudents(),
+    loadConsultations()
+  ])
 })
 </script>
