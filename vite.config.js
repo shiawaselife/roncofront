@@ -16,6 +16,10 @@ export default defineConfig({
         target: 'http://localhost:8080', // 백엔드 서버 URL
         changeOrigin: true, // Origin 헤더 변경
       },
+      '/v1/search': {  // 변경된 부분
+        target: 'https://openapi.naver.com',
+        changeOrigin: true,
+      }
     },
   },
   resolve: {

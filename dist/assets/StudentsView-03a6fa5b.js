@@ -1,1 +1,0 @@
-import{b as s,d as t,w as e,e as n,f as a,x as _,m as c,y as l,n as i,z as u}from"./index-4925a545.js";const d={__name:"StudentsView",setup(o){return(f,r)=>(s(),t(n,null,{default:e(()=>[a(i,null,{default:e(()=>[a(_,{icon:c(u),title:"학생 목록"},null,8,["icon"]),a(l)]),_:1})]),_:1}))}};export{d as default};

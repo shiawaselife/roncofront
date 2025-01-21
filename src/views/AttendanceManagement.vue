@@ -99,7 +99,7 @@
                       </div>
                     </div>
                     <!-- 시간 추가/수정 버튼 -->
-                    <div class="flex space-x-2" v-if="!isClassEnded(cls)">
+                    <div class="flex space-x-2">
                       <!-- 시간 추가 드롭다운 -->
                       <div class="relative">
                         <button 

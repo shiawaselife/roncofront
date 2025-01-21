@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import Style from '@/views/StyleView.vue'
 import Home from '@/views/HomeView.vue'
 import StudentInfoView from '@/views/StudentInfoView.vue'
+import { comma } from 'postcss/lib/list'
 
 const routes = [
   {
@@ -63,6 +64,14 @@ const routes = [
     path: '/report',
     name: 'report',
     component: () => import('@/views/ReportCenter.vue')
+  },
+  {
+    meta: {
+      title: '트렌드/뉴스'
+    },
+    path: '/trandnews',
+    name: 'trand-news',
+    component: () => import('@/views/TrendNewsView.vue')
   },
   {
     meta: {
@@ -137,6 +146,30 @@ const routes = [
     path: '/error',
     name: 'error',
     component: () => import('@/views/ErrorView.vue')
+  },
+  {
+    meta: {
+      title: 'Consultations'
+    },
+    path: '/consultations',
+    name: 'consultations',
+    component: () => import('@/views/Consultations.vue')
+  },
+  {
+    meta: {
+      title: 'Learning Reports'
+    },
+    path: '/learning-reports',
+    name: 'learning-reports',
+    component: () => import('@/views/LearningReports.vue')
+  },
+  {
+    meta: {
+      title: 'Portfolios'
+    },
+    path: '/portfolios',
+    name: 'portfolios',
+    component: () => import('@/views/Portfolios.vue')
   }
 ]
 

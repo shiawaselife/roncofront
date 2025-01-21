@@ -14,7 +14,9 @@ import {
   mdiCertificateOutline,
   mdiFileDocumentMultipleOutline,
   mdiSchoolOutline,
-  mdiMedal,
+  mdiMagnify,
+  mdiNewspaper,
+  mdiGraph,
 } from '@mdi/js'
 
 export default [
@@ -44,20 +46,25 @@ export default [
     icon: mdiFileDocumentMultipleOutline,
   },
   {
+    to: '/trandnews',
+    label: '트렌드/뉴스',
+    icon: mdiNewspaper
+  },
+  {
+    label: '마케팅 관리',
+    icon: mdiGraph,
+    menu: [
+      {
+        to: '/blogrank',
+        icon: mdiMagnify,
+        label: '블로그 순위 분석'
+      },
+    ]
+  },
+  {
     to: '/code',
     label: '코드 편집기',
     icon: mdiCodeArray
   },
-  {
-    label: 'Dropdown',
-    icon: mdiViewList,
-    menu: [
-      {
-        label: 'Item One'
-      },
-      {
-        label: 'Item Two'
-      }
-    ]
-  },
+
 ]

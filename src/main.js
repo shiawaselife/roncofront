@@ -10,6 +10,8 @@ import Toast from "vue-toastification"
 import "vue-toastification/dist/index.css"
 
 import './css/main.css'
+import '@fortawesome/fontawesome-free/css/all.css'
+
 
 const toastOptions = {
   transition: "Vue-Toastification__bounce",

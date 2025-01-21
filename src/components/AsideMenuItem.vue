@@ -1,3 +1,4 @@
+# AsideMenuItem.vue
 <script setup>
 import { ref, computed } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -25,7 +26,7 @@ const asideMenuItemActiveStyle = computed(() =>
 const isDropdownActive = ref(false)
 
 const componentClass = computed(() => [
-  props.isDropdownList ? 'py-3 px-6 text-sm' : 'py-3',
+  props.isDropdownList ? 'py-3 px-2 text-sm' : 'py-3',
   hasColor.value
     ? getButtonColor(props.item.color, false, true)
     : `aside-menu-item dark:text-slate-300 dark:hover:text-white`
@@ -59,7 +60,7 @@ const menuClick = (event) => {
         :path="item.icon"
         class="flex-none"
         :class="[vSlot && vSlot.isExactActive ? asideMenuItemActiveStyle : '']"
-        w="w-16"
+        :w="isDropdownList ? 'w-12' : 'w-16'"
         :size="18"
       />
       <span
@@ -81,7 +82,7 @@ const menuClick = (event) => {
     <AsideMenuList
       v-if="hasDropdown"
       :menu="item.menu"
-      :class="['aside-menu-dropdown', isDropdownActive ? 'block dark:bg-slate-800/50' : 'hidden']"
+      :class="['aside-menu-dropdown ml-4', isDropdownActive ? 'block dark:bg-slate-800/50' : 'hidden']"
       is-dropdown-list
     />
   </li>
