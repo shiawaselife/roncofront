@@ -3,197 +3,185 @@
     <SectionMain>
       <div class="flex gap-6">
         <!-- 좌측: 학생 목록 -->
-        <div class="w-1/3">
-          <div class="flex items-center mb-4 justify-between">
-            <!-- 왼쪽 영역: 아이콘 + 텍스트 -->
-            <div class="flex items-center">
-              <svg class="w-6 h-6 mr-2 text-indigo-500" viewBox="0 0 24 24">
-                <path fill="currentColor" :d="mdiAccountMultipleOutline" />
-              </svg>
-              <h1 class="text-xl font-bold">학생 관리</h1>
-            </div>
-
-            <!-- 중앙 영역: 검색 입력 필드 -->
-            <div class="relative flex-1 mx-4">
-              <input
-                type="text"
-                v-model="searchQuery"
-                placeholder="학생 이름 검색..."
-                class="w-full px-3 py-1 border rounded-lg text-sm"
-                @input="handleSearch"
-              />
-              <button 
-                v-if="searchQuery"
-                @click="clearSearch"
-                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <svg class="w-4 h-4" viewBox="0 0 24 24">
-                  <path fill="currentColor" :d="mdiClose" />
+        <div class="w-1/3 space-y-4">
+          <div class="bg-white rounded-xl shadow-sm p-4">
+            <!-- 헤더 -->
+            <div class="flex items-center justify-between mb-6">
+              <div class="flex items-center gap-2">
+                <svg class="w-6 h-6 text-indigo-600" viewBox="0 0 24 24">
+                  <path fill="currentColor" :d="mdiAccountMultipleOutline" />
                 </svg>
-              </button>
-            </div>
-
-            <!-- 오른쪽 영역: + 버튼 -->
-            <button
-              class="border border-blue-500 text-blue-500 hover:bg-blue-100 px-2 py-1 rounded text-sm"
-              @click="goCreateForm"
-            >
-              +
-            </button>
-          </div>
-
-          <!-- 학생 목록 -->
-          <div class="space-y-3">
-            <div
-              v-for="student in paginatedStudents"
-              :key="student.id"
-              class="relative bg-white p-4 rounded shadow hover:bg-gray-50 cursor-pointer"
-              @click="selectStudent(student)"
-            >
-              <!-- 수정 버튼 (오른쪽 상단) -->
-              <button
-                class="absolute top-2 right-2 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 px-2 py-1 rounded"
-                @click.stop="goEditStudent(student.id)" 
-              >
-                수정
-              </button>
-
-              <div class="font-bold">{{ student.name }}</div>
-              <div class="text-sm text-gray-600">
-                {{ student.daysOfWeek.map(day => dayMapping[day]).join(', ') }}
-                <br />
-                수업 시간 : {{ student.startTime }} ~ {{ student.endTime }}
+                <h1 class="text-xl font-semibold text-gray-900">학생 관리</h1>
               </div>
+
+              <!-- 검색창 -->
+              <div class="relative flex-1 mx-4">
+                <input
+                  type="text"
+                  v-model="searchQuery"
+                  placeholder="학생 이름 검색..."
+                  class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  @input="handleSearch"
+                />
+                <button 
+                  v-if="searchQuery"
+                  @click="clearSearch"
+                  class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <svg class="w-4 h-4" viewBox="0 0 24 24">
+                    <path fill="currentColor" :d="mdiClose" />
+                  </svg>
+                </button>
+              </div>
+
+              <button
+                class="inline-flex items-center justify-center px-3 py-1 border border-indigo-600 rounded-lg text-indigo-600 hover:bg-indigo-50 transition-colors"
+                @click="goCreateForm"
+              >
+                +
+              </button>
             </div>
 
-            <!-- 검색 결과가 없을 때 표시 -->
-            <div 
-              v-if="filteredStudents.length === 0" 
-              class="text-center py-4 text-gray-500"
-            >
-              검색 결과가 없습니다
-            </div>
+            <!-- 학생 목록 -->
+            <div class="space-y-3">
+              <div
+                v-for="student in paginatedStudents"
+                :key="student.id"
+                class="p-4 bg-white border border-gray-200 rounded-lg hover:border-indigo-500 transition-colors shadow-sm cursor-pointer"
+                @click="selectStudent(student)"
+              >
+                <div class="flex justify-between items-start mb-2">
+                  <div class="font-semibold text-gray-900">{{ student.name }}</div>
+                  <button
+                    class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                    @click.stop="goEditStudent(student.id)"
+                  >
+                    수정
+                  </button>
+                </div>
+                <div class="text-sm text-gray-600">
+                  {{ student.daysOfWeek.map(day => dayMapping[day]).join(', ') }}
+                  <br />
+                  수업 시간 : {{ student.startTime }} ~ {{ student.endTime }}
+                </div>
+              </div>
 
-            <!-- 페이지네이션 -->
-            <div v-if="totalPages > 1" class="flex justify-between items-center pt-4 border-t">
-              <button 
-                class="px-3 py-1 rounded text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                :disabled="currentPage === 1"
-                @click="prevPage"
-              >
-                이전
-              </button>
-              <span class="text-sm text-gray-600">
-                {{ currentPage }} / {{ totalPages }}
-              </span>
-              <button 
-                class="px-3 py-1 rounded text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                :disabled="currentPage === totalPages"
-                @click="nextPage"
-              >
-                다음
-              </button>
+              <!-- 페이지네이션 -->
+              <div v-if="totalPages > 1" class="flex justify-between items-center pt-4 border-t border-gray-200">
+                <button 
+                  class="px-3 py-1 rounded text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  :disabled="currentPage === 1"
+                  @click="prevPage"
+                >
+                  이전
+                </button>
+                <span class="text-sm text-gray-600">
+                  {{ currentPage }} / {{ totalPages }}
+                </span>
+                <button 
+                  class="px-3 py-1 rounded text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  :disabled="currentPage === totalPages"
+                  @click="nextPage"
+                >
+                  다음
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- 우측: 상세 -->
-        <div class="flex-1">
+        <!-- 우측: 상세 정보 -->
+        <div class="flex-1 space-y-6">
           <!-- 기본 정보 -->
-          <div class="bg-white p-4 rounded shadow mb-4">
-            <div class="flex items-center mb-2">
-              <svg class="w-5 h-5 mr-2 text-gray-600" viewBox="0 0 24 24">
+          <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="flex items-center gap-2 mb-6">
+              <svg class="w-6 h-6 text-gray-900" viewBox="0 0 24 24">
                 <path fill="currentColor" :d="mdiAccountOutline" />
               </svg>
-              <h2 class="text-lg font-semibold">기본 정보</h2>
+              <h2 class="text-xl font-semibold text-gray-900">기본 정보</h2>
             </div>
-            <div v-if="selected">
-              <div class="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <div class="text-sm text-gray-500">이름</div>
-                  <div class="font-bold">{{ selected.name }}</div>
-                </div>
-                <div>
-                  <div class="text-sm text-gray-500">연락처</div>
-                  <div>{{ selected.phone }}</div>
-                </div>
-                <div>
-                  <div class="text-sm text-gray-500">보호자 연락처</div>
-                  <div>{{ selected.parent }}</div>
-                </div>
-                <div>
-                  <div class="text-sm text-gray-500">생년월일</div>
-                  <div>{{ selected.birthday }}</div>
-                </div>
-                <div>
-                  <div class="text-sm text-gray-500">등록일</div>
-                  <div>{{ selected.regDate }}</div>
-                </div>
-                <div>
-                  <div class="text-sm text-gray-500">주소</div>
-                  <div>{{ selected.residence }}</div>
-                </div>
+
+            <div v-if="selected" class="grid grid-cols-2 gap-6">
+              <div>
+                <label class="text-sm font-medium text-gray-600">이름</label>
+                <p class="mt-1 font-semibold text-gray-900">{{ selected.name }}</p>
+              </div>
+              <div>
+                <label class="text-sm font-medium text-gray-600">연락처</label>
+                <p class="mt-1 text-gray-900">{{ selected.phone }}</p>
+              </div>
+              <div>
+                <label class="text-sm font-medium text-gray-600">보호자 연락처</label>
+                <p class="mt-1 text-gray-900">{{ selected.parent }}</p>
+              </div>
+              <div>
+                <label class="text-sm font-medium text-gray-600">생년월일</label>
+                <p class="mt-1 text-gray-900">{{ selected.birthday }}</p>
               </div>
             </div>
           </div>
 
           <!-- 출결 현황 -->
-          <div class="bg-white p-4 rounded shadow mb-4">
-            <div class="flex items-center mb-4">
-              <svg class="w-5 h-5 mr-2 text-blue-500" viewBox="0 0 24 24">
+          <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="flex items-center gap-2 mb-6">
+              <svg class="w-6 h-6 text-blue-600" viewBox="0 0 24 24">
                 <path fill="currentColor" :d="mdiCalendarRangeOutline" />
               </svg>
-              <h2 class="text-lg font-semibold">출결 현황</h2>
+              <h2 class="text-xl font-semibold text-gray-900">출결 현황</h2>
             </div>
 
             <div v-if="selected">
-              <!-- 연/월 선택 -->
-              <div class="flex items-center space-x-2 mb-4">
-                <label class="text-sm">
-                  연도:
+              <div class="flex items-center gap-4 mb-6">
+                <label class="flex items-center gap-2">
+                  <span class="text-sm font-medium text-gray-600">연도:</span>
                   <input 
                     type="number" 
-                    class="border p-1 text-sm w-20"
                     v-model="selectedYear"
+                    class="px-3 py-1 border border-gray-200 rounded-lg text-sm w-24 focus:ring-2 focus:ring-indigo-500"
                   />
                 </label>
-                <label class="text-sm">
-                  월:
+                <label class="flex items-center gap-2">
+                  <span class="text-sm font-medium text-gray-600">월:</span>
                   <input 
                     type="number" 
-                    class="border p-1 text-sm w-14"
                     v-model="selectedMonth"
+                    class="px-3 py-1 border border-gray-200 rounded-lg text-sm w-20 focus:ring-2 focus:ring-indigo-500"
                     min="1"
                     max="12"
                   />
                 </label>
                 <button 
-                  class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm"
+                  class="px-4 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm transition-colors"
                   @click="fetchStudentAttendance(selected.id)"
                 >
                   조회
                 </button>
               </div>
 
-              <!-- 출결 테이블 -->
-              <div class="overflow-x-auto">
-                <table class="w-full border-collapse text-sm">
+              <div class="overflow-hidden rounded-lg border border-gray-200">
+                <table class="min-w-full divide-y divide-gray-200">
                   <thead class="bg-gray-50">
                     <tr>
-                      <th class="border p-2 text-center">날짜</th>
-                      <th class="border p-2 text-center">요일</th>
-                      <th class="border p-2 text-center">등원시간</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">날짜</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">요일</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">등원시간</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody class="bg-white divide-y divide-gray-200">
                     <tr 
                       v-for="attendance in monthlyAttendanceList" 
                       :key="attendance.id"
                       class="hover:bg-gray-50"
                     >
-                      <td class="border p-2 text-center">{{ formatDate(attendance.date) }}</td>
-                      <td class="border p-2 text-center">{{ koreanDayOfWeek(attendance.date) }}</td>
-                      <td class="border p-2 text-center">{{ formatTime(attendance.createdAt) }}</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {{ formatDate(attendance.date) }}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {{ koreanDayOfWeek(attendance.date) }}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {{ formatTime(attendance.createdAt) }}
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -202,93 +190,76 @@
           </div>
 
           <!-- 학습 현황 -->
-          <div class="bg-white p-4 rounded shadow mb-4">
-            <div class="flex items-center mb-2">
-              <svg class="w-5 h-5 mr-2 text-green-500" viewBox="0 0 24 24">
+          <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="flex items-center gap-2 mb-6">
+              <svg class="w-6 h-6 text-green-600" viewBox="0 0 24 24">
                 <path fill="currentColor" :d="mdiProgressCheck" />
               </svg>
-              <h2 class="text-lg font-semibold">학습 현황</h2>
+              <h2 class="text-xl font-semibold text-gray-900">학습 현황</h2>
             </div>
-            <div v-if="selected">
-              <ul class="space-y-4">
-                <li>
-                  <div class="flex items-center justify-between">
-                    <span>Python</span>
-                    <span>50%</span>
-                  </div>
-                  <div class="w-full h-2 bg-gray-200 rounded">
-                    <div 
-                      class="h-2 bg-blue-500 rounded"
-                      style="width: 50%"
-                    ></div>
-                  </div>
-                </li>
-                <li>
-                  <div class="flex items-center justify-between">
-                    <span>COS Pro</span>
-                    <span>70%</span>
-                  </div>
-                  <div class="w-full h-2 bg-gray-200 rounded">
-                    <div 
-                      class="h-2 bg-green-500 rounded"
-                      style="width: 70%"
-                    ></div>
-                  </div>
-                </li>
-                <li>
-                  <div class="flex items-center justify-between">
-                    <span>타자연습</span>
-                    <span>40%</span>
-                  </div>
-                  <div class="w-full h-2 bg-gray-200 rounded">
-                    <div 
-                      class="h-2 bg-purple-500 rounded"
-                      style="width: 40%"
-                    ></div>
-                  </div>
-                </li>
-              </ul>
+
+            <div v-if="selected" class="space-y-6">
+              <div v-for="(progress, course) in ['Python', 'COS Pro', '타자연습']" :key="course">
+                <div class="flex justify-between mb-2">
+                  <span class="text-sm font-medium text-gray-700">{{ course }}</span>
+                  <span class="text-sm font-medium text-gray-700">50%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                  <div 
+                    class="h-2.5 rounded-full transition-all duration-300"
+                    :class="getCourseProgressClass(course)"
+                    :style="{ width: '50%' }"
+                  ></div>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- 보강 목록 -->
-          <div class="bg-white p-4 rounded shadow">
-            <div class="flex items-center mb-2">
-              <svg class="w-5 h-5 mr-2 text-gray-500" viewBox="0 0 24 24">
+          <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="flex items-center gap-2 mb-6">
+              <svg class="w-6 h-6 text-purple-600" viewBox="0 0 24 24">
                 <path fill="currentColor" :d="mdiHistory" />
               </svg>
-              <h2 class="text-lg font-semibold">보강 목록</h2>
+              <h2 class="text-xl font-semibold text-gray-900">보강 목록</h2>
             </div>
-            
-            <div class="flex items-center mb-2 space-x-2">
-              <select class="border p-1 text-sm rounded" v-model="selectedRange">
+
+            <div class="flex gap-4 mb-6">
+              <select 
+                v-model="selectedRange"
+                class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+              >
                 <option value="week">주간</option>
                 <option value="month">월간</option>
               </select>
-              <select class="border p-1 text-sm rounded" v-model="selectedOrder">
+              <select 
+                v-model="selectedOrder"
+                class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+              >
                 <option value="asc">오름차순</option>
                 <option value="desc">내림차순</option>
               </select>
             </div>
 
-            <div v-if="filteredMakeupClasses.length === 0" class="text-sm text-gray-500">
-              보강 수업이 없습니다.
-            </div>
-            <ul class="space-y-2" v-else>
-              <li 
+            <div class="space-y-3">
+              <div 
                 v-for="cls in filteredMakeupClasses" 
                 :key="cls.id"
-                class="flex items-center justify-between bg-gray-50 p-2 rounded"
+                class="p-4 bg-gray-50 rounded-lg border border-gray-200"
               >
-                <div>
-                  <div class="font-bold">{{ cls.student?.name }}</div>
-                  <div class="text-sm text-gray-600">
-                    {{ cls.classDate }} ({{ cls.startTime }}~{{ cls.endTime }})
+                <div class="flex justify-between items-center">
+                  <div>
+                    <div class="font-semibold text-gray-900">{{ cls.student?.name }}</div>
+                    <div class="text-sm text-gray-600">
+                      {{ cls.classDate }} ({{ cls.startTime }}~{{ cls.endTime }})
+                    </div>
                   </div>
+                  <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                    보강
+                  </span>
                 </div>
-                <div class="text-green-600 font-semibold">보강</div>
-              </li>
-            </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>

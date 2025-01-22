@@ -8,7 +8,7 @@ import {
   mdiAccountMultipleOutline,
   mdiViewList,
   mdiTelevisionGuide,
-  mdiResponsive,
+  mdiDatabase,
   mdiCalendarCheckOutline,
   mdiNote,
   mdiCertificateOutline,
@@ -17,6 +17,8 @@ import {
   mdiMagnify,
   mdiNewspaper,
   mdiGraph,
+  mdiSchool,
+  mdiDirections
 } from '@mdi/js'
 
 export default [
@@ -66,5 +68,26 @@ export default [
     label: '코드 편집기',
     icon: mdiCodeArray
   },
+  {
+    to: '/s',
+    label: '학생용',
+    icon: mdiSchool, 
+  },
+  {
+    to: '/phpmyadmin',
+    label: '데이터베이스 관리',
+    icon: mdiDatabase
+  },
+  {
+    label: '바로가기',
+    icon: mdiDirections,
+    menu: [
+      {
+        to: '/mos',
+        label: 'MOS',
+        icon: mdiNote
+      }
+    ],
+  }
 
 ]

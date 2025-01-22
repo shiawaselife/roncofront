@@ -1,130 +1,211 @@
-# ReportCenter.vue
 <template>
   <LayoutAuthenticated>
     <SectionMain>
-      <div class="p-6">
-        <!-- 상단 메뉴 영역 -->
-        <div class="flex items-center justify-between mb-4">
+      <div class="max-w-7xl mx-auto p-6 space-y-6 bg-gray-50 min-h-screen">
+        <!-- 헤더 섹션 -->
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-2xl shadow-sm">
           <div class="flex items-center">
-            <svg class="w-6 h-6 mr-2 text-blue-600" viewBox="0 0 24 24">
+            <svg class="w-8 h-8 text-blue-600" viewBox="0 0 24 24">
               <path fill="currentColor" :d="mdiFileDocumentMultipleOutline" />
             </svg>
-            <h1 class="text-2xl font-bold">리포트 센터</h1>
+            <h1 class="text-2xl font-bold text-gray-800 ml-3">리포트 센터</h1>
           </div>
         </div>
 
-        <!-- 상단 3가지 메뉴 -->
-        <div class="grid grid-cols-3 gap-4 mb-6">
-          <RouterLink to="/learning-reports" 
-            class="bg-white p-4 rounded shadow hover:bg-gray-50 cursor-pointer flex items-center">
-            <svg class="w-5 h-5 mr-2 text-green-500" viewBox="0 0 24 24">
-              <path fill="currentColor" :d="mdiFileChartOutline" />
-            </svg>
-            <div>
-              <h2 class="text-lg font-semibold">학습 보고서</h2>
-              <p class="text-sm text-gray-500">학생별 학습 현황 리포트</p>
+        <!-- 상단 메뉴 카드 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <RouterLink 
+            to="/learning-reports" 
+            class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 transform hover:-translate-y-1"
+          >
+            <div class="flex items-start">
+              <div class="bg-green-100 p-3 rounded-lg">
+                <svg class="w-6 h-6 text-green-600" viewBox="0 0 24 24">
+                  <path fill="currentColor" :d="mdiFileChartOutline" />
+                </svg>
+              </div>
+              <div class="ml-4">
+                <h2 class="text-lg font-semibold text-gray-800">학습 보고서</h2>
+                <p class="text-sm text-gray-600 mt-1">학생별 학습 현황 리포트</p>
+              </div>
             </div>
           </RouterLink>
           
-          <RouterLink to="/portfolios" 
-            class="bg-white p-4 rounded shadow hover:bg-gray-50 cursor-pointer flex items-center">
-            <svg class="w-5 h-5 mr-2 text-purple-500" viewBox="0 0 24 24">
-              <path fill="currentColor" :d="mdiFolderOutline" />
-            </svg>
-            <div>
-              <h2 class="text-lg font-semibold">포트폴리오 관리</h2>
-              <p class="text-sm text-gray-500">학생 결과물 및 기록</p>
+          <RouterLink 
+            to="/portfolios" 
+            class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 transform hover:-translate-y-1"
+          >
+            <div class="flex items-start">
+              <div class="bg-purple-100 p-3 rounded-lg">
+                <svg class="w-6 h-6 text-purple-600" viewBox="0 0 24 24">
+                  <path fill="currentColor" :d="mdiFolderOutline" />
+                </svg>
+              </div>
+              <div class="ml-4">
+                <h2 class="text-lg font-semibold text-gray-800">포트폴리오 관리</h2>
+                <p class="text-sm text-gray-600 mt-1">학생 결과물 및 기록</p>
+              </div>
             </div>
           </RouterLink>
           
-          <RouterLink to="/consultations" 
-            class="bg-white p-4 rounded shadow hover:bg-gray-50 cursor-pointer flex items-center">
-            <svg class="w-5 h-5 mr-2 text-orange-500" viewBox="0 0 24 24">
-              <path fill="currentColor" :d="mdiPhone" />
-            </svg>
-            <div>
-              <h2 class="text-lg font-semibold">상담 기록</h2>
-              <p class="text-sm text-gray-500">문의 및 상담 관리</p>
+          <RouterLink 
+            to="/consultations" 
+            class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 transform hover:-translate-y-1"
+          >
+            <div class="flex items-start">
+              <div class="bg-orange-100 p-3 rounded-lg">
+                <svg class="w-6 h-6 text-orange-600" viewBox="0 0 24 24">
+                  <path fill="currentColor" :d="mdiPhone" />
+                </svg>
+              </div>
+              <div class="ml-4">
+                <h2 class="text-lg font-semibold text-gray-800">상담 기록</h2>
+                <p class="text-sm text-gray-600 mt-1">문의 및 상담 관리</p>
+              </div>
             </div>
           </RouterLink>
         </div>
 
-        <!-- 하단 내용: 최근 상담 기록, 포트폴리오 -->
-        <div class="grid grid-cols-2 gap-4">
+        <!-- 하단 내용 그리드 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- 최근 상담 기록 -->
-          <div class="bg-white p-4 rounded shadow">
-            <div class="flex items-center justify-between mb-2">
-              <div class="flex items-center">
-                <svg class="w-5 h-5 mr-2 text-blue-500" viewBox="0 0 24 24">
-                  <path fill="currentColor" :d="mdiCommentTextMultipleOutline"/>
-                </svg>
-                <h3 class="text-lg font-semibold">최근 상담 기록</h3>
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="border-b border-gray-100 p-6">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <div class="bg-blue-100 p-2 rounded-lg">
+                    <svg class="w-5 h-5 text-blue-600" viewBox="0 0 24 24">
+                      <path fill="currentColor" :d="mdiCommentTextMultipleOutline"/>
+                    </svg>
+                  </div>
+                  <h3 class="text-lg font-semibold text-gray-800">최근 상담 기록</h3>
+                </div>
+                <RouterLink 
+                  to="/consultations" 
+                  class="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  전체보기
+                </RouterLink>
               </div>
-              <RouterLink to="/consultations" class="text-sm text-blue-600">전체보기</RouterLink>
             </div>
-            <ul class="space-y-3">
-              <li v-for="consultation in recentConsultations" :key="consultation.id" 
-                  class="flex items-center justify-between bg-gray-50 p-2 rounded">
-                <div>
-                  <span class="font-bold">{{ consultation.student.name }}</span>
-                  <span class="ml-2 text-sm text-blue-600">{{ consultation.type }}</span>
-                  <p class="text-xs text-gray-500">{{ consultation.content }}</p>
-                </div>
-                <div class="text-right text-sm">
-                  <div>{{ formatDate(consultation.consultationDate) }}</div>
-                  <span :class="getStatusClass(consultation.status)">
-                    {{ getStatusText(consultation.status) }}
-                  </span>
-                </div>
-              </li>
-            </ul>
+            <div class="p-6">
+              <ul class="space-y-4">
+                <li 
+                  v-for="consultation in recentConsultations" 
+                  :key="consultation.id" 
+                  class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors duration-200"
+                >
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <div class="flex items-center space-x-2">
+                        <span class="font-semibold text-gray-800">
+                          {{ consultation.student.name }}
+                        </span>
+                        <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                          {{ consultation.type }}
+                        </span>
+                      </div>
+                      <p class="text-sm text-gray-600 mt-1">{{ consultation.content }}</p>
+                    </div>
+                    <div class="text-right">
+                      <div class="text-sm text-gray-500">
+                        {{ formatDate(consultation.consultationDate) }}
+                      </div>
+                      <span 
+                        :class="[
+                          'text-xs font-medium px-2 py-1 rounded-full mt-1 inline-block',
+                          getStatusClass(consultation.status)
+                        ]"
+                      >
+                        {{ getStatusText(consultation.status) }}
+                      </span>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
           </div>
 
           <!-- 포트폴리오 -->
-          <div class="bg-white p-4 rounded shadow">
-            <div class="flex items-center justify-between mb-2">
-              <div class="flex items-center">
-                <svg class="w-5 h-5 mr-2 text-purple-500" viewBox="0 0 24 24">
-                  <path fill="currentColor" :d="mdiFolderOutline"/>
-                </svg>
-                <h3 class="text-lg font-semibold">포트폴리오</h3>
-              </div>
-              <RouterLink to="/portfolios" class="text-sm text-blue-600">전체보기</RouterLink>
-            </div>
-            <ul class="space-y-3">
-              <li v-for="portfolio in recentPortfolios" :key="portfolio.id" 
-                  class="flex items-center justify-between bg-gray-50 p-2 rounded">
-                <div>
-                  <span class="font-bold">{{ portfolio.title }}</span>
-                  <p class="text-xs text-gray-500">{{ portfolio.student.name }}</p>
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="border-b border-gray-100 p-6">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <div class="bg-purple-100 p-2 rounded-lg">
+                    <svg class="w-5 h-5 text-purple-600" viewBox="0 0 24 24">
+                      <path fill="currentColor" :d="mdiFolderOutline"/>
+                    </svg>
+                  </div>
+                  <h3 class="text-lg font-semibold text-gray-800">포트폴리오</h3>
                 </div>
-                <div class="text-sm text-gray-600">{{ formatDate(portfolio.createdDate) }}</div>
-              </li>
-            </ul>
+                <RouterLink 
+                  to="/portfolios" 
+                  class="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  전체보기
+                </RouterLink>
+              </div>
+            </div>
+            <div class="p-6">
+              <ul class="space-y-4">
+                <li 
+                  v-for="portfolio in recentPortfolios" 
+                  :key="portfolio.id" 
+                  class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors duration-200"
+                >
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <div class="font-semibold text-gray-800">{{ portfolio.title }}</div>
+                      <p class="text-sm text-gray-600 mt-1">{{ portfolio.student.name }}</p>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                      {{ formatDate(portfolio.createdDate) }}
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
         <!-- 학생별 진도 현황 -->
-        <div class="bg-white p-4 rounded shadow mt-4">
-          <div class="flex items-center mb-2">
-            <svg class="w-5 h-5 mr-2 text-green-500" viewBox="0 0 24 24">
-              <path fill="currentColor" :d="mdiProgressCheck" />
-            </svg>
-            <h3 class="text-lg font-semibold">학생별 진도 현황</h3>
-          </div>
-          <p class="text-sm text-gray-500 mb-3">선택된 학생의 프로그래밍 진도율</p>
-          <div v-for="report in studentProgress" :key="report.id" class="mb-4">
-            <div class="flex justify-between mb-1">
-              <span>{{ report.subject }}</span>
-              <span class="text-sm text-gray-500">
-                {{ report.progress }}% 
-                (최근 업데이트: {{ formatDate(report.lastUpdate) }})
-              </span>
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div class="border-b border-gray-100 p-6">
+            <div class="flex items-center space-x-3">
+              <div class="bg-green-100 p-2 rounded-lg">
+                <svg class="w-5 h-5 text-green-600" viewBox="0 0 24 24">
+                  <path fill="currentColor" :d="mdiProgressCheck" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-800">학생별 진도 현황</h3>
+                <p class="text-sm text-gray-500 mt-1">선택된 학생의 프로그래밍 진도율</p>
+              </div>
             </div>
-            <div class="w-full h-2 bg-gray-200 rounded">
-              <div class="h-2 rounded" 
-                   :class="getProgressColorClass(report.subject)"
-                   :style="{ width: report.progress + '%' }">
+          </div>
+          <div class="p-6">
+            <div class="space-y-6">
+              <div 
+                v-for="report in studentProgress" 
+                :key="report.id" 
+                class="bg-gray-50 rounded-lg p-4"
+              >
+                <div class="flex justify-between mb-2">
+                  <span class="font-medium text-gray-800">{{ report.subject }}</span>
+                  <span class="text-sm text-gray-600">
+                    {{ report.progress }}% 
+                    <span class="text-gray-400">
+                      (최근 업데이트: {{ formatDate(report.lastUpdate) }})
+                    </span>
+                  </span>
+                </div>
+                <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    class="h-full rounded-full transition-all duration-300"
+                    :class="getProgressColorClass(report.subject)"
+                    :style="{ width: `${report.progress}%` }"
+                  ></div>
+                </div>
               </div>
             </div>
           </div>

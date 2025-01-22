@@ -1,19 +1,20 @@
 <template>
   <LayoutAuthenticated>
-    <SectionMain> 
-      <div>
-        <div class="flex items-center mb-6 justify-between">
-          <div class="flex items-center">
-            <svg class="w-6 h-6 mr-2 text-orange-500" viewBox="0 0 24 24">
+    <SectionMain>
+      <!-- 메인 컨테이너 -->
+      <div class="max-w-7xl mx-auto p-6 space-y-8">
+        <!-- 헤더 섹션 -->
+        <div class="flex items-center justify-between bg-gradient-to-r from-orange-50 to-orange-100 p-6 rounded-2xl shadow-sm">
+          <div class="flex items-center space-x-3">
+            <svg class="w-8 h-8 text-orange-500" viewBox="0 0 24 24">
               <path fill="currentColor" :d="mdiCertificateOutline" />
             </svg>
-            <h1 class="text-2xl font-bold">자격증 관리</h1>
+            <h1 class="text-2xl font-bold text-gray-800">자격증 관리</h1>
           </div>
           
-          <!-- 시험 추가 버튼 -->
           <button
             @click="openExamModal"
-            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center"
+            class="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition duration-150 ease-in-out"
           >
             <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
               <path fill="currentColor" :d="mdiPlus" />
@@ -22,279 +23,118 @@
           </button>
         </div>
 
-        <!-- 시험 추가 모달 -->
-        <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div class="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 class="text-xl font-bold mb-4">시험 추가</h2>
-            
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">시험 종류</label>
-                <select 
-                  v-model="newExam.type"
-                  class="w-full border rounded-lg p-2"
-                >
-                  <option v-for="type in examTypes" :key="type" :value="type">
-                    {{ getExamTypeDisplay(type) }}
-                  </option>
-                </select>
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">시험 일자</label>
-                <input 
-                  type="date"
-                  v-model="newExam.examDate"
-                  class="w-full border rounded-lg p-2"
-                />
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">시험 시간</label>
-                <input 
-                  type="time"
-                  v-model="newExam.examTime"
-                  class="w-full border rounded-lg p-2"
-                />
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">최대 인원</label>
-                <input 
-                  type="number"
-                  v-model="newExam.maxParticipants"
-                  class="w-full border rounded-lg p-2"
-                />
-              </div>
-            </div>
-            
-            <div class="flex justify-end space-x-2 mt-6">
-              <button 
-                @click="closeModal"
-                class="px-4 py-2 border rounded-lg hover:bg-gray-100"
-              >
-                취소
-              </button>
-              <button 
-                @click="createExam"
-                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-              >
-                추가
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 시험 결과 관리 모달 -->
-        <div v-if="showResultModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div class="bg-white rounded-lg p-6 w-full max-w-2xl">
-            <h2 class="text-xl font-bold mb-4">시험 결과 관리</h2>
-
-            <!-- 시험 및 학생 선택 -->
-            <div class="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">시험 선택</label>
-                <select 
-                  v-model="selectedExamId"
-                  class="w-full border rounded-lg p-2"
-                >
-                  <option v-for="exam in allExams" :key="exam.id" :value="exam.id">
-                    {{ EXAM_TYPE_DISPLAY[exam.type] }} ({{ formatDateTime(exam.examDateTime) }})
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">학생 선택</label>
-                <div class="relative">
-                  <input 
-                    type="text"
-                    v-model="studentSearch"
-                    placeholder="학생 이름 검색..."
-                    class="w-full border rounded-lg p-2 mb-2"
-                  />
-                  <select 
-                    v-model="selectedStudentId" 
-                    class="w-full border rounded-lg p-2"
-                    size="5"
-                  >
-                    <option v-for="student in filteredStudents" :key="student.id" :value="student.id">
-                      {{ student.name }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <!-- 점수 입력 폼 -->
-            <div class="space-y-4 mb-6">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">점수</label>
-                <input 
-                  type="number"
-                  v-model="examResult.score"
-                  class="w-full border rounded-lg p-2"
-                  min="0"
-                  max="100"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">시험 응시 일시</label>
-                <input 
-                  type="datetime-local"
-                  v-model="examResult.examTakenAt"
-                  class="w-full border rounded-lg p-2"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">피드백</label>
-                <textarea 
-                  v-model="examResult.feedback"
-                  rows="3"
-                  class="w-full border rounded-lg p-2"
-                ></textarea>
-              </div>
-
-              <!-- 자동 계산된 결과 표시 -->
-              <div class="bg-gray-50 p-4 rounded-lg">
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <span class="text-sm text-gray-500">등급:</span>
-                    <span class="ml-2 font-bold">{{ computedGrade }}</span>
-                  </div>
-                  <div>
-                    <span class="text-sm text-gray-500">결과:</span>
-                    <span 
-                      class="ml-2 font-bold"
-                      :class="isPassed ? 'text-green-600' : 'text-red-600'"
-                    >
-                      {{ isPassed ? '합격' : '불합격' }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 버튼 -->
-            <div class="flex justify-end space-x-2">
-              <button 
-                @click="closeResultModal"
-                class="px-4 py-2 border rounded-lg hover:bg-gray-100"
-              >
-                취소
-              </button>
-              <button 
-                @click="saveExamResult"
-                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-              >
-                저장
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 상단 통계 카드 -->
-        <div class="grid grid-cols-4 gap-4 mb-6">
-          <div class="bg-white p-4 rounded shadow text-center">
-            <div class="flex items-center justify-center mb-1">
-              <svg class="w-5 h-5 mr-1 text-blue-600" viewBox="0 0 24 24">
+        <!-- 통계 카드 그리드 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <!-- 이번 달 시험 -->
+          <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl shadow-sm">
+            <div class="flex items-center space-x-2 mb-2">
+              <svg class="w-6 h-6 text-blue-600" viewBox="0 0 24 24">
                 <path fill="currentColor" :d="mdiFileDocumentEditOutline" />
               </svg>
-              <span class="text-sm text-gray-500">이번 달 시험</span>
+              <span class="text-sm font-medium text-gray-600">이번 달 시험</span>
             </div>
-            <div class="text-2xl font-bold">{{ statistics.monthlyExams }}건</div>
+            <div class="text-3xl font-bold text-gray-800">{{ statistics.monthlyExams }}건</div>
           </div>
-          <div class="bg-white p-4 rounded shadow text-center">
-            <div class="flex items-center justify-center mb-1">
-              <svg class="w-5 h-5 mr-1 text-green-600" viewBox="0 0 24 24">
+
+          <!-- 응시 예정 -->
+          <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl shadow-sm">
+            <div class="flex items-center space-x-2 mb-2">
+              <svg class="w-6 h-6 text-green-600" viewBox="0 0 24 24">
                 <path fill="currentColor" :d="mdiAccountGroupOutline" />
               </svg>
-              <span class="text-sm text-gray-500">응시 예정</span>
+              <span class="text-sm font-medium text-gray-600">응시 예정</span>
             </div>
-            <div class="text-2xl font-bold">{{ statistics.upcomingParticipants }}명</div>
+            <div class="text-3xl font-bold text-gray-800">{{ statistics.upcomingParticipants }}명</div>
           </div>
-          <div class="bg-white p-4 rounded shadow text-center">
-            <div class="flex items-center justify-center mb-1">
-              <svg class="w-5 h-5 mr-1 text-purple-600" viewBox="0 0 24 24">
+
+          <!-- 이번 달 합격 -->
+          <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl shadow-sm">
+            <div class="flex items-center space-x-2 mb-2">
+              <svg class="w-6 h-6 text-purple-600" viewBox="0 0 24 24">
                 <path fill="currentColor" :d="mdiCheckDecagram"/>
               </svg>
-              <span class="text-sm text-gray-500">이번 달 합격</span>
+              <span class="text-sm font-medium text-gray-600">이번 달 합격</span>
             </div>
-            <div class="text-2xl font-bold">{{ statistics.monthlyPassed }}명</div>
+            <div class="text-3xl font-bold text-gray-800">{{ statistics.monthlyPassed }}명</div>
           </div>
-          <div class="bg-white p-4 rounded shadow text-center">
-            <div class="flex items-center justify-center mb-1">
-              <svg class="w-5 h-5 mr-1 text-pink-500" viewBox="0 0 24 24">
+
+          <!-- 평균 합격률 -->
+          <div class="bg-gradient-to-br from-pink-50 to-pink-100 p-6 rounded-xl shadow-sm">
+            <div class="flex items-center space-x-2 mb-2">
+              <svg class="w-6 h-6 text-pink-600" viewBox="0 0 24 24">
                 <path fill="currentColor" :d="mdiPercentOutline" />
               </svg>
-              <span class="text-sm text-gray-500">평균 합격률</span>
+              <span class="text-sm font-medium text-gray-600">평균 합격률</span>
             </div>
-            <div class="text-2xl font-bold">{{ statistics.passRate }}%</div>
+            <div class="text-3xl font-bold text-gray-800">{{ statistics.passRate }}%</div>
           </div>
         </div>
 
-        <!-- 예정된 시험 목록 -->
-        <div class="bg-white p-4 rounded shadow mb-6">
-          <div class="flex items-center mb-2">
-            <svg class="w-5 h-5 mr-2 text-gray-600" viewBox="0 0 24 24">
-              <path fill="currentColor" :d="mdiCalendarRangeOutline"/>
-            </svg>
-            <h2 class="text-lg font-semibold">예정된 시험</h2>
+        <!-- 예정된 시험 섹션 -->
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div class="border-b border-gray-100 p-6">
+            <div class="flex items-center space-x-3">
+              <svg class="w-6 h-6 text-gray-600" viewBox="0 0 24 24">
+                <path fill="indigo" :d="mdiCalendarRangeOutline"/>
+              </svg>
+              <h2 class="text-lg font-semibold text-gray-800">예정된 시험</h2>
+            </div>
           </div>
-          <ul class="space-y-3">
-            <li 
-              v-for="exam in upcomingExams" 
-              :key="exam.id"
-              class="flex items-center justify-between"
-            >
-              <div>
-                {{ getExamTypeDisplay(exam.type) }} 
-                {{ formatDateTime(exam.examDateTime) }}
-              </div>
-              <div class="text-sm text-gray-500">
-                신청인원: {{ exam.currentParticipants }}/{{ exam.maxParticipants }}명
-              </div>
-            </li>
-          </ul>
+          <div class="px-2 py-1">
+            <ul class="divide-y divide-gray-100">
+              <li 
+                v-for="exam in upcomingExams" 
+                :key="exam.id"
+                class="py-4 flex items-center justify-between hover:bg-gray-50 rounded-lg px-4 transition duration-150 ease-in-out"
+              >
+                <div class="flex items-center space-x-3">
+                  <span class="font-medium text-gray-900">{{ getExamTypeDisplay(exam.type) }}</span>
+                  <span class="text-gray-500">{{ formatDateTime(exam.examDateTime) }}</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                    {{ exam.currentParticipants }}/{{ exam.maxParticipants }}명
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </div>
         </div>
 
-        <!-- 최근 시험 결과 -->
-        <div class="bg-white p-4 rounded shadow">
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center">
-              <svg class="w-5 h-5 mr-2 text-gray-600" viewBox="0 0 24 24">
-                <path fill="currentColor" :d="mdiChartBar" />
-              </svg>
-              <h2 class="text-lg font-semibold">최근 시험 결과</h2>
+        <!-- 최근 시험 결과 섹션 -->
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div class="border-b border-gray-100 p-6">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <svg class="w-6 h-6 text-gray-600" viewBox="0 0 24 24">
+                  <path fill="orange" :d="mdiChartBar" />
+                </svg>
+                <h2 class="text-lg font-semibold text-gray-800">최근 시험 결과</h2>
+              </div>
+              <button
+                @click="openResultModal"
+                class="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm transition duration-150 ease-in-out"
+              >
+                <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                  <path fill="currentColor" :d="mdiPlus" />
+                </svg>
+                결과 입력
+              </button>
             </div>
-            <!-- 결과 추가 버튼 -->
-            <button
-              @click="openResultModal"
-              class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg flex items-center text-sm"
-            >
-              <svg class="w-4 h-4 mr-1" viewBox="0 0 24 24">
-                <path fill="currentColor" :d="mdiPlus" />
-              </svg>
-              결과 입력
-            </button>
           </div>
 
-          <!-- 검색 필터 -->
-          <div class="flex gap-4 mb-4">
-            <div class="flex-1">
+          <!-- 필터 섹션 -->
+          <div class="p-6 border-b border-gray-100 bg-gray-50">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input 
                 type="text"
                 v-model="resultSearch"
                 placeholder="학생 이름으로 검색..."
-                class="w-full border rounded-lg p-2"
+                class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
-            </div>
-            <div class="flex-1">
               <select 
                 v-model="resultTypeFilter"
-                class="w-full border rounded-lg p-2"
+                class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">모든 시험 유형</option>
                 <option v-for="type in examTypes" :key="type" :value="type">
@@ -303,46 +143,271 @@
               </select>
             </div>
           </div>
-          <div v-for="group in groupedResults" :key="group.examId">
-            <div class="mb-2 font-bold">
-              {{ EXAM_TYPE_DISPLAY[group.type] }} ({{ formatDateTime(group.examDateTime) }})
-            </div>
-            <table class="w-full mb-6 text-left border">
-              <thead>
-                <tr class="bg-gray-100 border-b">
-                  <th class="p-2">이름</th>
-                  <th class="p-2">점수</th>
-                  <th class="p-2">등급</th>
-                  <th class="p-2">결과</th>
-                  <th class="p-2">관리</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr 
-                  v-for="result in group.results" 
-                  :key="result.id"
-                  class="border-b"
-                >
-                  <td class="p-2">{{ result.studentName }}</td>
-                  <td class="p-2">{{ result.score }}</td>
-                  <td class="p-2">{{ result.grade }}</td>
-                  <td class="p-2" :class="result.passed ? 'text-green-600' : 'text-red-600'">
-                    {{ result.passed ? '합격' : '불합격' }}
-                  </td>
-                  <td class="p-2">
-                    <button 
-                      @click="editExamResult(result)" 
-                      class="text-blue-500 hover:text-blue-700"
+
+          <!-- 결과 테이블 -->
+          <div class="p-6">
+            <div v-for="group in groupedResults" :key="group.examId" class="mb-8">
+              <div class="text-lg font-semibold text-gray-800 mb-4">
+                {{ EXAM_TYPE_DISPLAY[group.type] }} 
+                <span class="text-sm text-gray-500">{{ formatDateTime(group.examDateTime) }}</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full">
+                  <thead>
+                    <tr class="bg-gray-50">
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">점수</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">등급</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결과</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-200">
+                    <tr 
+                      v-for="result in group.results" 
+                      :key="result.id"
+                      class="hover:bg-gray-50 transition duration-150 ease-in-out"
                     >
-                      수정
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                      <td class="px-6 py-4 whitespace-nowrap">{{ result.studentName }}</td>
+                      <td class="px-6 py-4 whitespace-nowrap font-medium">{{ result.score }}</td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-sm rounded-full"
+                          :class="{
+                            'bg-green-100 text-green-800': result.grade === 'A',
+                            'bg-blue-100 text-blue-800': result.grade === 'B',
+                            'bg-yellow-100 text-yellow-800': result.grade === 'C',
+                            'bg-orange-100 text-orange-800': result.grade === 'D',
+                            'bg-red-100 text-red-800': result.grade === 'F'
+                          }"
+                        >
+                          {{ result.grade }}
+                        </span>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <span 
+                          class="px-2 py-1 text-sm rounded-full"
+                          :class="result.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                        >
+                          {{ result.passed ? '합격' : '불합격' }}
+                        </span>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <button 
+                          @click="editExamResult(result)" 
+                          class="text-blue-600 hover:text-blue-800 transition duration-150 ease-in-out"
+                        >
+                          수정
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- 시험 추가 모달 -->
+      <Teleport to="body">
+        <transition
+          enter-active-class="transition duration-200 ease-out"
+          enter-from-class="opacity-0"
+          enter-to-class="opacity-100"
+          leave-active-class="transition duration-200 ease-in"
+          leave-from-class="opacity-100"
+          leave-to-class="opacity-0"
+        >
+          <div v-if="showModal" class="fixed inset-0 z-[100]">
+            <div class="absolute inset-0 bg-gray-900/75 backdrop-blur-sm"></div>
+            <div class="relative flex items-center justify-center min-h-screen p-4">
+              <div class="bg-white rounded-xl shadow-xl w-full max-w-md relative p-6">
+                <h2 class="text-xl font-bold mb-4">시험 추가</h2>
+                
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">시험 종류</label>
+                    <select 
+                      v-model="newExam.type"
+                      class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option v-for="type in examTypes" :key="type" :value="type">
+                        {{ getExamTypeDisplay(type) }}
+                      </option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">시험 일자</label>
+                    <input 
+                      type="date"
+                      v-model="newExam.examDate"
+                      class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">시험 시간</label>
+                    <input 
+                      type="time"
+                      v-model="newExam.examTime"
+                      class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">최대 인원</label>
+                    <input 
+                    type="number"
+                      v-model="newExam.maxParticipants"
+                      class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                
+                <div class="flex justify-end space-x-2 mt-6">
+                  <button 
+                    @click="closeModal"
+                    class="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-100 transition duration-150 ease-in-out"
+                  >
+                    취소
+                  </button>
+                  <button 
+                    @click="createExam"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-150 ease-in-out"
+                  >
+                    추가
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+      </Teleport>
+
+      <!-- 시험 결과 관리 모달 -->
+      <Teleport to="body">
+        <transition
+          enter-active-class="transition duration-200 ease-out"
+          enter-from-class="opacity-0"
+          enter-to-class="opacity-100"
+          leave-active-class="transition duration-200 ease-in"
+          leave-from-class="opacity-100"
+          leave-to-class="opacity-0"
+        >
+          <div v-if="showResultModal" class="fixed inset-0 z-[100]">
+            <div class="absolute inset-0 bg-gray-900/75 backdrop-blur-sm"></div>
+            <div class="relative flex items-center justify-center min-h-screen p-4">
+              <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl relative p-6">
+                <h2 class="text-xl font-bold mb-4">시험 결과 관리</h2>
+
+                <!-- 시험 및 학생 선택 -->
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">시험 선택</label>
+                    <select 
+                      v-model="selectedExamId"
+                      class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option v-for="exam in allExams" :key="exam.id" :value="exam.id">
+                        {{ EXAM_TYPE_DISPLAY[exam.type] }} ({{ formatDateTime(exam.examDateTime) }})
+                      </option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">학생 선택</label>
+                    <div class="relative">
+                      <input 
+                        type="text"
+                        v-model="studentSearch"
+                        placeholder="학생 이름 검색..."
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2"
+                      />
+                      <select 
+                        v-model="selectedStudentId" 
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        size="5"
+                      >
+                        <option v-for="student in filteredStudents" :key="student.id" :value="student.id">
+                          {{ student.name }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 점수 입력 폼 -->
+                <div class="space-y-4 mb-6">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">점수</label>
+                    <input 
+                      type="number"
+                      v-model="examResult.score"
+                      class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      min="0"
+                      max="100"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">시험 응시 일시</label>
+                    <input 
+                      type="datetime-local"
+                      v-model="examResult.examTakenAt"
+                      class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">피드백</label>
+                    <textarea 
+                      v-model="examResult.feedback"
+                      rows="3"
+                      class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    ></textarea>
+                  </div>
+
+                  <!-- 자동 계산된 결과 표시 -->
+                  <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="grid grid-cols-2 gap-4">
+                      <div>
+                        <span class="text-sm text-gray-500">등급:</span>
+                        <span class="ml-2 font-bold">{{ computedGrade }}</span>
+                      </div>
+                      <div>
+                        <span class="text-sm text-gray-500">결과:</span>
+                        <span 
+                          class="ml-2 font-bold"
+                          :class="isPassed ? 'text-green-600' : 'text-red-600'"
+                        >
+                          {{ isPassed ? '합격' : '불합격' }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 버튼 -->
+                <div class="flex justify-end space-x-2">
+                  <button 
+                    @click="closeResultModal"
+                    class="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-100 transition duration-150 ease-in-out"
+                  >
+                    취소
+                  </button>
+                  <button 
+                    @click="saveExamResult"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-150 ease-in-out"
+                  >
+                    저장
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+      </Teleport>
     </SectionMain>
   </LayoutAuthenticated>
 </template>

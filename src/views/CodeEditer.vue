@@ -1,81 +1,94 @@
 <template>
-  <div class="main-container">
-    <!-- (1) 상단: 휴대폰 번호 + 코드 불러오기 버튼 영역 -->
-    <div class="phone-container">
-      <label for="phoneInput" class="phone-label">핸드폰 번호</label>
-      <input
-        id="phoneInput"
-        v-model="phone"
-        type="text"
-        placeholder="핸드폰 번호"
-        class="user-name-input"
-      />
-      <button class="load-code-button" @click="loadUserCode">코드 불러오기</button>
-      <button class="hint-button" @click="showHint">힌트 보기</button>
+  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <!-- 상단 영역 -->
+    <div class="bg-white shadow-lg border-b border-gray-200">
+      <div class="container mx-auto px-4 py-4 flex items-center gap-4">
+        <label class="text-gray-700 font-medium">핸드폰 번호</label>
+        <input
+          v-model="phone"
+          type="text"
+          placeholder="핸드폰 번호"
+          class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+        />
+        <button
+          @click="loadUserCode"
+          class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition duration-200"
+        >
+          코드 불러오기
+        </button>
+        <button
+          @click="showHint"
+          class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition duration-200"
+        >
+          힌트 보기
+        </button>
+      </div>
     </div>
 
-    <!-- (2) 문제 & 에디터 영역 -->
-    <div class="content-area">
-      <!-- 문제 표시 (왼쪽) -->
-      <div class="problem-container">
-        <div class="problem-header">
-          <h2>문제</h2>
-          <select class="category-dropdown" v-model="selectedCategory">
-            <option disabled value="">분류</option>
-            <option
-              v-for="(category) in categoryList"
-              :key="category.id"
-              :value="category.id"
+    <!-- 메인 콘텐츠 영역 -->
+    <div class="container mx-auto px-4 py-6 flex gap-6">
+      <!-- 문제 영역 -->
+      <div class="w-2/5 bg-white rounded-xl shadow-lg p-6">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-4 shadow-md">
+          <div class="flex items-center gap-4">
+            <h2 class="text-white font-semibold text-lg">문제</h2>
+            <select 
+              v-model="selectedCategory"
+              class="bg-white/90 text-gray-800 rounded-md py-1 px-3 text-sm border-0 focus:ring-2 focus:ring-white"
             >
-              {{ category.name }}
-            </option>
-          </select>
-          <select
-            class="problem-dropdown"
-            v-if="selectedCategory"
-            v-model="selectedProblemIndex"
-            @change="onProblemChange"
-          >
-            <option disabled value="">문제 선택</option>
-            <option
-              v-for="(problem, idx) in problemsInSelectedCategory"
-              :key="problem.id"
-              :value="idx"
+              <option disabled value="">분류</option>
+              <option v-for="category in categoryList" :key="category.id" :value="category.id">
+                {{ category.name }}
+              </option>
+            </select>
+            <select
+              v-if="selectedCategory"
+              v-model="selectedProblemIndex"
+              @change="onProblemChange"
+              class="bg-white/90 text-gray-800 rounded-md py-1 px-3 text-sm border-0 focus:ring-2 focus:ring-white"
             >
-              문제 {{ idx + 1 }}
-            </option>
-          </select>
+              <option disabled value="">문제 선택</option>
+              <option v-for="(problem, idx) in problemsInSelectedCategory" :key="problem.id" :value="idx">
+                문제 {{ idx + 1 }}
+              </option>
+            </select>
+          </div>
         </div>
 
-        <div class="problem-content">
-          <p v-if="!currentProblem.title">
+        <div class="mt-6 space-y-4">
+          <div v-if="!currentProblem.title" class="text-gray-500 text-center py-8">
             카테고리를 선택하고, 문제를 골라보세요.
-          </p>
+          </div>
 
-          <div v-else>
-            <h3>{{ currentProblem.title }}</h3>
-            <p>{{ currentProblem.description }}</p>
-            <ul>
-              <li
-                v-for="(instruction, index) in currentProblem.instructions"
-                :key="index"
-              >
+          <div v-else class="space-y-4">
+            <h3 class="text-xl font-bold text-gray-800">{{ currentProblem.title }}</h3>
+            <p class="text-gray-600">{{ currentProblem.description }}</p>
+            <ul class="list-disc list-inside space-y-2 text-gray-700">
+              <li v-for="(instruction, index) in currentProblem.instructions" :key="index">
                 {{ instruction }}
               </li>
             </ul>
 
-            <!-- 힌트 표시 -->
-            <div v-if="hint" class="hint-section">
-              <h4>힌트:</h4>
-              <p>{{ hint }}</p>
+            <!-- 힌트 섹션 -->
+            <div v-if="hint" class="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
+              <h4 class="font-semibold text-amber-800">힌트:</h4>
+              <p class="text-amber-700 mt-2">{{ hint }}</p>
             </div>
 
-            <!-- 좌우 화살표 버튼 -->
-            <div class="arrow-buttons" v-if="problemsInSelectedCategory.length > 1">
-              <button class="arrow-button" @click="prevProblem" :disabled="!canGoPrev">
+            <!-- 이전/다음 버튼 -->
+            <div v-if="problemsInSelectedCategory.length > 1" class="flex justify-center gap-4 mt-6">
+              <button
+                @click="prevProblem"
+                :disabled="!canGoPrev"
+                class="px-4 py-2 bg-gray-800 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition duration-200"
+              >
                 ← 이전 문제
               </button>
-              <button class="arrow-button" @click="nextProblem" :disabled="!canGoNext">
+              <button
+                @click="nextProblem"
+                :disabled="!canGoNext"
+                class="px-4 py-2 bg-gray-800 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition duration-200"
+              >
                 다음 문제 →
               </button>
             </div>
@@ -83,38 +96,54 @@
         </div>
       </div>
 
-      <!-- 에디터 (오른쪽) -->
-      <div class="editor-section">
-        <!-- CodeMirror 6 루트 DOM -->
-        <div ref="editorRoot" class="editor-root"></div>
+      <!-- 에디터 영역 -->
+      <div class="w-3/5 space-y-4">
+        <!-- CodeMirror 에디터 -->
+        <div ref="editorRoot" class="border border-gray-200 rounded-xl shadow-lg overflow-hidden"></div>
 
-        <!-- 코드 스니펫 -->
-        <div class="snippet-buttons">
-          <button class="snippet-button" @click="insertSnippet('for')">for 문</button>
-          <button class="snippet-button" @click="insertSnippet('if')">if 문</button>
-          <button class="snippet-button" @click="insertSnippet('while')">while 문</button>
+        <!-- 스니펫 버튼 -->
+        <div class="flex gap-2">
+          <button
+            v-for="type in ['for', 'if', 'while']"
+            :key="type"
+            @click="insertSnippet(type)"
+            class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-md shadow transition duration-200"
+          >
+            {{ type }} 문
+          </button>
         </div>
 
-        <!-- 실행 & 저장 + scanf 입력 -->
-        <div class="actions">
-          <div class="scanf-input-container">
-            <label for="programInput" class="scanf-label">프로그램 입력값</label>
-            <input
-              id="programInput"
-              v-model="programInput"
-              type="text"
-              placeholder="scanf가 받을 값"
-              class="scanf-input"
-            />
+        <!-- 실행 & 저장 영역 -->
+        <div class="bg-gray-50 rounded-lg p-4 space-y-4">
+          <div class="flex items-center gap-4">
+            <div class="flex-1">
+              <label class="block text-sm font-medium text-gray-700 mb-1">프로그램 입력값</label>
+              <input
+                v-model="programInput"
+                type="text"
+                placeholder="scanf가 받을 값"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <button
+              @click="runCode"
+              class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transition duration-200"
+            >
+              코드 실행
+            </button>
+            <button
+              @click="saveCode"
+              class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition duration-200"
+            >
+              코드 저장
+            </button>
           </div>
-          <button class="run-button" @click="runCode">코드 실행</button>
-          <button class="save-button" @click="saveCode">코드 저장</button>
-        </div>
 
-        <!-- 실행 결과 -->
-        <div v-if="output" class="output-container">
-          <h3>실행 결과:</h3>
-          <pre>{{ output }}</pre>
+          <!-- 실행 결과 -->
+          <div v-if="output" class="bg-gray-900 rounded-lg p-4 shadow-inner">
+            <h3 class="text-lg font-semibold text-white mb-2">실행 결과:</h3>
+            <pre class="text-emerald-400 font-mono text-sm overflow-x-auto">{{ output }}</pre>
+          </div>
         </div>
       </div>
     </div>
@@ -411,232 +440,5 @@ async function loadProblemsFromServer() {
 </script>
 
 <style scoped>
-/* 기존 스타일 동일 */
-.main-container {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  background-color: #f5f7fa;
-}
 
-.phone-container {
-  display: flex;
-  gap: 10px;
-  padding: 10px 20px;
-  background-color: #fff;
-  border-bottom: 2px solid #e0e0e0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-.phone-label {
-  font-weight: bold;
-  color: #333;
-}
-.user-name-input {
-  width: 180px;
-  padding: 6px 8px;
-  font-size: 14px;
-  border-radius: 4px;
-  color: #000;
-  border: 1px solid #ccc;
-}
-.load-code-button {
-  background-color: #28a745;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 14px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-.load-code-button:hover {
-  background-color: #218838;
-}
-.hint-button {
-  background-color: #ffc107;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 14px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-.hint-button:hover {
-  background-color: #e0a800;
-}
-.content-area {
-  display: flex;
-  flex: 1;
-  padding: 20px;
-}
-
-/* 문제 영역 */
-.problem-container {
-  width: 40%;
-  padding: 20px;
-  background-color: #fefefe;
-  border-right: 2px solid #e0e0e0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-}
-.problem-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background-color: #007bff;
-  padding: 10px 20px;
-  border-radius: 8px;
-  color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-.category-dropdown,
-.problem-dropdown {
-  background-color: white;
-  color: #333;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 5px 10px;
-  font-size: 14px;
-}
-.problem-content {
-  flex: 1;
-  margin-top: 16px;
-  background-color: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  overflow-y: auto;
-  position: relative;
-}
-.hint-section {
-  margin-top: 20px;
-  padding: 10px;
-  background-color: #fff3cd;
-  border: 1px solid #ffeeba;
-  border-radius: 4px;
-  color: #856404;
-}
-.arrow-buttons {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-}
-.arrow-button {
-  background-color: #555;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 16px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-.arrow-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-.arrow-button:hover:not(:disabled) {
-  background-color: #333;
-}
-
-/* 에디터 영역 */
-.editor-section {
-  width: 60%;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-}
-.editor-root {
-  height: 550px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-/* 스니펫 */
-.snippet-buttons {
-  margin-top: 10px;
-  display: flex;
-  gap: 10px;
-}
-.snippet-button {
-  background-color: #17a2b8;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 12px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-.snippet-button:hover {
-  background-color: #138496;
-}
-
-/* actions */
-.actions {
-  margin-top: 16px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-.scanf-input-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.scanf-label {
-  font-weight: bold;
-  color: #333;
-}
-.scanf-input {
-  padding: 6px 8px;
-  font-size: 14px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  width: 160px;
-  flex-shrink: 0;
-}
-.run-button,
-.save-button {
-  background-color: #007bff;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 14px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-.run-button:hover,
-.save-button:hover {
-  background-color: #0056b3;
-}
-
-/* 실행 결과 */
-.output-container {
-  margin-top: 16px;
-  padding: 20px;
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-.output-container h3 {
-  margin-bottom: 10px;
-  font-size: 18px;
-  color: #333;
-}
-.output-container pre {
-  background-color: #282c34;
-  color: #61dafb;
-  padding: 10px;
-  border-radius: 4px;
-  font-family: 'Courier New', Courier, monospace;
-  overflow-x: auto;
-  max-height: 300px;
-}
 </style>

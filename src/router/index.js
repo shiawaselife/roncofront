@@ -179,6 +179,36 @@ const routes = [
     path: '/blogrank',
     name: 'blogrank',
     component: () => import('@/views/BlogRank.vue')
+  },
+  {
+    meta: {
+      title: 'Class Calendar'
+    },
+    path: '/classes/calendar',
+    name: 'class-calendar',
+    component: () => import('@/views/ClassCalendar.vue')
+  },
+  {
+    meta: {
+      title: '학생용',
+    },
+    path: '/s',
+    name: 'student-dashboard',
+    component: () => import('@/views/StudentDashboard.vue')
+  },
+  {
+    path: '/mos',
+    beforeEnter: (to, from, next) => {
+      window.location.href = 'https://moscontrol.ybmit.com/control/admin_login.asp'
+    },
+    name: 'mos-redirect'
+  },
+  {
+    path: '/phpmyadmin',
+    beforeEnter: (to, from, next) => {
+      window.location.href = '/phpmyadmin'
+    },
+    name: 'phpmyadmin-redirect'
   }
 ]
 

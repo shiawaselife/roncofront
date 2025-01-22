@@ -1,106 +1,124 @@
-# TrendNews.vue
 <template>
   <LayoutAuthenticated>
     <SectionMain>
-      <div class="min-h-screen bg-gray-50 p-4">
-        <!-- News Container -->
-        <div class="bg-white rounded-lg shadow p-6">
-          <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-semibold">트렌드/뉴스</h2>
-            <div class="flex items-center gap-4">
-              <!-- Search Input -->
-              <div class="relative">
-                <input 
-                  v-model="searchTerm"
-                  type="text"
-                  placeholder="뉴스 검색..."
-                  class="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  @keyup.enter="handleSearch"
-                >
-                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+      <div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+        <!-- 메인 컨테이너 -->
+        <div class="max-w-6xl mx-auto">
+          <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <!-- 헤더 섹션 -->
+            <div class="border-b border-gray-100">
+              <div class="px-6 py-5 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <h2 class="text-2xl font-bold text-gray-800">트렌드/뉴스</h2>
+                  <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+                    <!-- 검색 입력 -->
+                    <div class="relative w-full sm:w-64">
+                      <input 
+                        v-model="searchTerm"
+                        type="text"
+                        placeholder="뉴스 검색..."
+                        class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                        @keyup.enter="handleSearch"
+                      >
+                      <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                    <!-- 업데이트 정보 -->
+                    <div class="flex items-center gap-3">
+                      <span class="text-sm text-gray-500">{{ currentDateTime }} 업데이트</span>
+                      <button 
+                        class="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50"
+                        @click="refreshNews"
+                        :disabled="loading"
+                      >
+                        <i class="fas fa-sync" :class="{ 'animate-spin': loading }"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <span class="text-gray-500">{{ currentDateTime }} 업데이트</span>
-              <button 
-                class="text-gray-500 hover:text-gray-700 disabled:opacity-50"
-                @click="refreshNews"
-                :disabled="loading"
-              >
-                <i class="fas fa-sync" :class="{ 'animate-spin': loading }"></i>
-              </button>
             </div>
-          </div>
 
-          <!-- Loading State -->
-          <div v-if="loading" class="flex justify-center items-center py-10">
-            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-          </div>
-
-          <!-- Error State -->
-          <div v-else-if="error" class="text-center py-10">
-            <p class="text-red-500">{{ error }}</p>
-            <button 
-              @click="refreshNews"
-              class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              다시 시도
-            </button>
-          </div>
-
-          <!-- News List -->
-          <div v-else class="space-y-6">
-            <div v-for="news in newsItems" :key="news.id" 
-                class="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
-              <!-- News Meta -->
-              <div class="flex items-center gap-3 mb-3 flex-wrap">
-                <span :class="[
-                  'px-3 py-1 rounded-full text-sm',
-                  news.category.type === 'tech' ? 'bg-blue-100 text-blue-700' : '',
-                  news.category.type === 'science' ? 'bg-green-100 text-green-700' : '',
-                  news.category.type === 'education' ? 'bg-purple-100 text-purple-700' : ''
-                ]">
-                  {{ news.category.name }}
-                </span>
-                <span v-for="tag in news.tags" :key="tag" 
-                      class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm">
-                  {{ tag }}
-                </span>
-                <span class="text-gray-500 text-sm">{{ news.time }}</span>
+            <!-- 컨텐츠 영역 -->
+            <div class="px-6 py-6">
+              <!-- 로딩 상태 -->
+              <div v-if="loading" class="flex justify-center items-center py-20">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
               </div>
 
-              <!-- News Title -->
-              <h3 class="text-lg font-medium mb-2 flex items-center gap-2">
-                <a 
-                  :href="news.externalUrl" 
-                  target="_blank" 
-                  class="hover:text-blue-600"
-                >
-                  {{ news.title }}
-                  <i class="fas fa-external-link-alt text-gray-400 text-sm ml-2"></i>
-                </a>
-              </h3>
-
-              <!-- News Description -->
-              <p class="text-gray-600 leading-relaxed mb-3">
-                {{ news.description }}
-              </p>
-
-              <!-- News Actions -->
-              <div class="flex items-center gap-3">
+              <!-- 에러 상태 -->
+              <div v-else-if="error" class="text-center py-20">
+                <p class="text-red-500 mb-4">{{ error }}</p>
                 <button 
-                  @click="toggleBookmark(news)"
-                  :class="[
-                    'text-gray-400 hover:text-gray-600 transition',
-                    news.bookmarked ? 'text-yellow-400 hover:text-yellow-500' : ''
-                  ]"
+                  @click="refreshNews"
+                  class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  <i class="fas fa-bookmark"></i>
+                  다시 시도
                 </button>
-                <button 
-                  @click="shareNews(news)"
-                  class="text-gray-400 hover:text-gray-600 transition"
+              </div>
+
+              <!-- 뉴스 목록 -->
+              <div v-else class="space-y-8">
+                <div 
+                  v-for="news in newsItems" 
+                  :key="news.id" 
+                  class="group p-6 bg-white rounded-xl border border-gray-100 hover:border-blue-100 hover:shadow-md transition-all duration-200"
                 >
-                  <i class="fas fa-share-alt"></i>
-                </button>
+                  <!-- 뉴스 메타 정보 -->
+                  <div class="flex flex-wrap items-center gap-2 mb-3">
+                    <span :class="[
+                      'px-3 py-1.5 rounded-full text-sm font-medium',
+                      news.category.type === 'tech' ? 'bg-blue-100 text-blue-700' : '',
+                      news.category.type === 'science' ? 'bg-green-100 text-green-700' : '',
+                      news.category.type === 'education' ? 'bg-purple-100 text-purple-700' : ''
+                    ]">
+                      {{ news.category.name }}
+                    </span>
+                    <span 
+                      v-for="tag in news.tags" 
+                      :key="tag" 
+                      class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full text-sm"
+                    >
+                      {{ tag }}
+                    </span>
+                    <span class="text-sm text-gray-500">{{ news.time }}</span>
+                  </div>
+
+                  <!-- 뉴스 제목 -->
+                  <h3 class="text-xl font-semibold mb-3 group-hover:text-blue-600 transition-colors">
+                    <a 
+                      :href="news.externalUrl" 
+                      target="_blank" 
+                      class="flex items-center gap-2"
+                    >
+                      {{ news.title }}
+                      <i class="fas fa-external-link-alt text-gray-400 text-sm transition-colors group-hover:text-blue-500"></i>
+                    </a>
+                  </h3>
+
+                  <!-- 뉴스 설명 -->
+                  <p class="text-gray-600 leading-relaxed mb-4">
+                    {{ news.description }}
+                  </p>
+
+                  <!-- 뉴스 액션 -->
+                  <div class="flex items-center gap-4">
+                    <button 
+                      @click="toggleBookmark(news)"
+                      class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                      :class="news.bookmarked ? 'text-yellow-500' : 'text-gray-500'"
+                    >
+                      <i class="fas fa-bookmark"></i>
+                      <span class="text-sm">북마크</span>
+                    </button>
+                    <button 
+                      @click="shareNews(news)"
+                      class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500"
+                    >
+                      <i class="fas fa-share-alt"></i>
+                      <span class="text-sm">공유</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
