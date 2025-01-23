@@ -1,66 +1,63 @@
-<script setup>
-import { reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import { mdiAccount, mdiAsterisk } from '@mdi/js'
-import SectionFullScreen from '@/components/SectionFullScreen.vue'
-import CardBox from '@/components/CardBox.vue'
-import FormCheckRadio from '@/components/FormCheckRadio.vue'
-import FormField from '@/components/FormField.vue'
-import FormControl from '@/components/FormControl.vue'
-import BaseButton from '@/components/BaseButton.vue'
-import BaseButtons from '@/components/BaseButtons.vue'
-import LayoutGuest from '@/layouts/LayoutGuest.vue'
-
-const form = reactive({
-  login: 'john.doe',
-  pass: 'highly-secure-password-fYjUw-',
-  remember: true
-})
-
-const router = useRouter()
-
-const submit = () => {
-  router.push('/dashboard')
-}
-</script>
-
+# Login.vue
 <template>
   <LayoutGuest>
     <SectionFullScreen v-slot="{ cardClass }" bg="purplePink">
-      <CardBox :class="cardClass" is-form @submit.prevent="submit">
-        <FormField label="Login" help="Please enter your login">
+      <CardBox :class="cardClass" is-form @submit.prevent="handleLogin">
+        <h2 class="text-2xl font-bold mb-6 text-center">학생 로그인</h2>
+        
+        <FormField label="이름" help="학생 이름을 입력하세요">
           <FormControl
-            v-model="form.login"
+            v-model="studentName"
             :icon="mdiAccount"
-            name="login"
-            autocomplete="username"
+            name="name"
+            autocomplete="name"
+            required
           />
         </FormField>
-
-        <FormField label="Password" help="Please enter your password">
-          <FormControl
-            v-model="form.pass"
-            :icon="mdiAsterisk"
-            type="password"
-            name="password"
-            autocomplete="current-password"
-          />
-        </FormField>
-
-        <FormCheckRadio
-          v-model="form.remember"
-          name="remember"
-          label="Remember"
-          :input-value="true"
-        />
 
         <template #footer>
           <BaseButtons>
-            <BaseButton type="submit" color="info" label="Login" />
-            <BaseButton to="/dashboard" color="info" outline label="Back" />
+            <BaseButton type="submit" color="info" label="로그인" />
+            <BaseButton to="/" color="info" outline label="뒤로" />
           </BaseButtons>
         </template>
       </CardBox>
     </SectionFullScreen>
   </LayoutGuest>
 </template>
+
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { mdiAccount } from '@mdi/js'
+import axios from 'axios'
+import SectionFullScreen from '@/components/SectionFullScreen.vue'
+import CardBox from '@/components/CardBox.vue'
+import FormField from '@/components/FormField.vue'
+import FormControl from '@/components/FormControl.vue'
+import BaseButton from '@/components/BaseButton.vue'
+import BaseButtons from '@/components/BaseButtons.vue'
+import LayoutGuest from '@/layouts/LayoutGuest.vue'
+
+import { adminKey } from '@/AdminKey'
+
+const router = useRouter()
+const studentName = ref('')
+
+const handleLogin = async () => {
+  try {
+    const response = await axios.get(`/api/students/login/${studentName.value}`)
+    if (response.data) {
+      localStorage.setItem('studentId', response.data.id)
+      localStorage.setItem('studentName', response.data.name)
+      
+      if (response.data.name === adminKey) {
+        router.push('/attendance')
+      }
+      else router.push('/s')
+    }
+  } catch (error) {
+    alert('로그인에 실패했습니다.')
+  }
+}
+</script>

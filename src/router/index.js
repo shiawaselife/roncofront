@@ -4,6 +4,7 @@ import Home from '@/views/HomeView.vue'
 import StudentInfoView from '@/views/StudentInfoView.vue'
 import { comma } from 'postcss/lib/list'
 import Portfolios from '@/views/Portfolios.vue'
+import { adminKey } from '@/AdminKey.js'
 
 const routes = [
   {
@@ -134,7 +135,8 @@ const routes = [
   },
   {
     meta: {
-      title: 'Login'
+      title: 'Login',
+      allowAnonymous: true
     },
     path: '/login',
     name: 'login',
@@ -219,5 +221,28 @@ const router = createRouter({
     return savedPosition || { top: 0 }
   }
 })
+
+router.beforeEach((to, from, next) => {
+  const studentId = localStorage.getItem('studentId')
+  const studentName = localStorage.getItem('studentName')
+  
+  if (!studentId && to.path !== '/login') {
+    next('/login')
+    return
+  }
+ 
+  if (studentId) {
+    if (studentName === adminKey) {
+      next()
+    } else if (to.path !== '/s') {
+      next('/s') 
+    } else {
+      next()
+    }
+    return
+  }
+ 
+  next()
+ })
 
 export default router

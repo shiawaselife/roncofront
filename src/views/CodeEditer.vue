@@ -2,26 +2,27 @@
   <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
     <!-- 상단 영역 -->
     <div class="bg-white shadow-lg border-b border-gray-200">
-      <div class="container mx-auto px-4 py-4 flex items-center gap-4">
-        <label class="text-gray-700 font-medium">핸드폰 번호</label>
-        <input
-          v-model="phone"
-          type="text"
-          placeholder="핸드폰 번호"
-          class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
-        />
-        <button
-          @click="loadUserCode"
-          class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition duration-200"
-        >
-          코드 불러오기
-        </button>
-        <button
-          @click="showHint"
-          class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition duration-200"
-        >
-          힌트 보기
-        </button>
+      <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+        <!-- 왼쪽: 사용자 이름 -->
+        <div class="text-gray-700 font-medium">
+          {{ studentName }}님 환영합니다
+        </div>
+        
+        <!-- 오른쪽: 버튼들 -->
+        <div class="flex items-center gap-4">
+          <button
+            @click="loadUserCode"
+            class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition duration-200"
+          >
+            코드 불러오기
+          </button>
+          <button
+            @click="showHint"
+            class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition duration-200"
+          >
+            힌트 보기
+          </button>
+        </div>
       </div>
     </div>
 
@@ -160,9 +161,18 @@ import { linter, lintGutter } from '@codemirror/lint'
 import { keymap } from '@codemirror/view'
 import { indentWithTab } from '@codemirror/commands'
 import { cpp } from '@codemirror/lang-cpp'
+import { adminKey } from '@/AdminKey.js'
 
 // 진단 상태를 업데이트하는 StateEffect 정의
 const setDiagnosticsEffect = StateEffect.define()
+
+const studentName = computed(() => {
+  const realName = localStorage.getItem('studentName')
+  if (realName === adminKey) {
+    return '관리용'
+  }
+  return realName
+})
 
 // ★★★ 진단 상태를 저장하는 StateField 정의 ★★★
 const diagnosticsField = StateField.define({
@@ -231,7 +241,7 @@ import {
 // ---------------------------------
 // State
 // ---------------------------------
-const phone = ref('')
+const studentId = computed(() => localStorage.getItem('studentId'))
 const programInput = ref('')
 const problems = ref([])
 const categoryList = ref([])
@@ -270,22 +280,20 @@ const onProblemChange = () => {
 }
 
 const loadUserCode = async () => {
-  if (!phone.value) {
-    setEditorCode('// 핸드폰 번호를 입력 후 불러오기!')
+  if (!studentId.value) {
+    setEditorCode('// 로그인이 필요합니다')
     return
   }
   if (!currentProblem.value.id) {
-    setEditorCode('// 문제를 먼저 선택하세요.')
+    setEditorCode('// 문제를 선택하세요')
     return
   }
+  
   try {
-    const { code } = await fetchUserCode(phone.value, currentProblem.value.id)
-    setEditorCode(
-      code || '// 저장된 코드가 없습니다.\n// 여기서부터 코드를 작성하세요.'
-    )
+    const { code } = await fetchUserCode(studentId.value, currentProblem.value.id)
+    setEditorCode(code || '// 새로운 코드를 작성하세요')
   } catch (e) {
-    console.error(e)
-    setEditorCode('// 코드 불러오기 실패.\n// 새로 코드를 작성하세요.')
+    setEditorCode('// 코드 불러오기 실패')
   }
 }
 
@@ -371,24 +379,25 @@ const runCode = async () => {
 }
 
 const saveCode = async () => {
+  if (!studentId.value) {
+    alert('로그인이 필요합니다')
+    return
+  }
+
   if (!currentProblem.value.id) {
-    alert('문제를 먼저 선택하세요!')
+    alert('문제를 선택해주세요')
     return
   }
-  if (!phone.value) {
-    alert('핸드폰 번호를 입력하세요!')
-    return
-  }
-  const code = getEditorCode()
+  
   try {
     const response = await saveCodeToServer(
-      phone.value,
-      currentProblem.value.id,
-      code
+      studentId.value,
+      currentProblem.value.id, 
+      getEditorCode()
     )
-    alert(response.message || '코드가 저장되었습니다!')
+    alert(response.message || '저장완료')
   } catch (error) {
-    alert('코드 저장 중 문제가 발생했습니다.')
+    alert('저장 실패')
   }
 }
 
