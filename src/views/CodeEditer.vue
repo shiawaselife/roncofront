@@ -33,23 +33,14 @@
         <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-4 shadow-md">
           <div class="flex items-center gap-4">
             <h2 class="text-white font-semibold text-lg">문제</h2>
-            <select 
-              v-model="selectedCategory"
-              class="bg-white/90 text-gray-800 rounded-md py-1 px-3 text-sm border-0 focus:ring-2 focus:ring-white"
-            >
-              <option disabled value="">분류</option>
-              <option v-for="category in categoryList" :key="category.id" :value="category.id">
-                {{ category.name }}
-              </option>
-            </select>
             <select
-              v-if="selectedCategory"
-              v-model="selectedProblemIndex"
-              @change="onProblemChange"
+              v-model="selectedProblemId"
+              @change="changeProblem"
               class="bg-white/90 text-gray-800 rounded-md py-1 px-3 text-sm border-0 focus:ring-2 focus:ring-white"
             >
-              <option disabled value="">문제 선택</option>
-              <option v-for="(problem, idx) in problemsInSelectedCategory" :key="problem.id" :value="idx">
+              <option v-for="(problem, idx) in problemsInSelectedCategory" 
+                      :key="problem.id" 
+                      :value="problem.id">
                 문제 {{ idx + 1 }}
               </option>
             </select>
@@ -152,7 +143,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 
 // CodeMirror 6
 import { EditorView, basicSetup } from 'codemirror'
@@ -162,6 +153,10 @@ import { keymap } from '@codemirror/view'
 import { indentWithTab } from '@codemirror/commands'
 import { cpp } from '@codemirror/lang-cpp'
 import { adminKey } from '@/AdminKey.js'
+
+import { useRoute, useRouter } from 'vue-router'
+const route = useRoute()
+const router = useRouter()
 
 // 진단 상태를 업데이트하는 StateEffect 정의
 const setDiagnosticsEffect = StateEffect.define()
@@ -257,19 +252,54 @@ const editorRoot = ref(null)
 // computed
 // ---------------------------------
 const problemsInSelectedCategory = computed(() => {
-  if (!selectedCategory.value) return []
-  return problems.value.filter(
-    (item) => item.categoryId === selectedCategory.value
-  )
+ if (!categoryId.value) return []
+ return problems.value.filter(p => Number(p.categoryId) === categoryId.value)
 })
+
+
 const currentProblem = computed(() => {
-  if (!selectedCategory.value || selectedProblemIndex.value === null) {
-    return {}
-  }
-  return problemsInSelectedCategory.value[selectedProblemIndex.value] || {}
+ if (!categoryId.value || !selectedProblemId.value) return {}
+ return problems.value.find(p => p.id === selectedProblemId.value) || {}
 })
-const canGoPrev = computed(() => selectedProblemIndex.value > 0)
-const canGoNext = computed(() => selectedProblemIndex.value < problemsInSelectedCategory.value.length - 1)
+
+
+const prevProblem = () => {
+ const currentIndex = problemsInSelectedCategory.value.findIndex(p => p.id === Number(selectedProblemId.value))
+ if (currentIndex > 0) {
+   const prevProblem = problemsInSelectedCategory.value[currentIndex - 1]
+   router.push({
+     path: '/code',
+     query: {
+       category: categoryId.value,
+       problem: prevProblem.id
+     }
+   })
+ }
+}
+
+const nextProblem = () => {
+ const currentIndex = problemsInSelectedCategory.value.findIndex(p => p.id === Number(selectedProblemId.value))
+ if (currentIndex < problemsInSelectedCategory.value.length - 1) {
+   const nextProblem = problemsInSelectedCategory.value[currentIndex + 1]
+   router.push({
+     path: '/code',
+     query: {
+       category: categoryId.value, 
+       problem: nextProblem.id
+     }
+   })
+ }
+}
+
+const canGoPrev = computed(() => {
+ const currentIndex = problemsInSelectedCategory.value.findIndex(p => p.id === Number(selectedProblemId.value))
+ return currentIndex > 0
+})
+
+const canGoNext = computed(() => {
+ const currentIndex = problemsInSelectedCategory.value.findIndex(p => p.id === Number(selectedProblemId.value))
+ return currentIndex < problemsInSelectedCategory.value.length - 1
+})
 
 // ---------------------------------
 // Methods
@@ -295,18 +325,6 @@ const loadUserCode = async () => {
   } catch (e) {
     setEditorCode('// 코드 불러오기 실패')
   }
-}
-
-const prevProblem = () => {
-  if (!canGoPrev.value) return
-  selectedProblemIndex.value--
-  onProblemChange()
-}
-
-const nextProblem = () => {
-  if (!canGoNext.value) return
-  selectedProblemIndex.value++
-  onProblemChange()
 }
 
 const showHint = () => {
@@ -401,29 +419,6 @@ const saveCode = async () => {
   }
 }
 
-// ---------------------------------
-// Lifecycle
-// ---------------------------------
-onMounted(async () => {
-  const startState = EditorState.create({
-    doc: '// 이곳에 C언어 코드를 작성하세요.\n',
-    extensions: [
-      basicSetup,
-      cpp(),
-      keymap.of([indentWithTab]),
-      diagnosticsField, // lint용 StateField
-      lintGutter()      // 가터
-    ]
-  })
-
-  editorView = new EditorView({
-    state: startState,
-    parent: editorRoot.value
-  })
-
-  await loadProblemsFromServer()
-})
-
 onBeforeUnmount(() => {
   if (editorView) {
     editorView.destroy()
@@ -446,6 +441,67 @@ async function loadProblemsFromServer() {
     console.error('문제 목록 로드 실패:', error)
   }
 }
+
+const categoryId = computed(() => Number(route.query.category))
+
+// selectedProblemId를 computed로 변경
+const selectedProblemId = computed({
+  get: () => Number(route.query.problem),
+  set: (value) => {
+    router.push({
+      path: '/code',
+      query: { 
+        category: categoryId.value,
+        problem: value
+      }
+    })
+  }
+})
+
+watch(route, (newRoute) => {
+  if (newRoute.query.category && newRoute.query.problem) {
+    selectedProblemId.value = Number(newRoute.query.problem)
+    loadUserCode()
+  }
+}, { immediate: true })
+
+
+
+const changeProblem = () => {
+ router.push({
+   path: '/code',
+   query: { 
+     category: categoryId.value,
+     problem: selectedProblemId.value 
+   }
+ })
+}
+
+// 기존 두 onMounted 선언 제거하고 하나로 통합
+onMounted(async () => {
+  const startState = EditorState.create({
+    doc: '// 이곳에 C언어 코드를 작성하세요.\n',
+    extensions: [
+      basicSetup,
+      cpp(),
+      keymap.of([indentWithTab]),
+      diagnosticsField,
+      lintGutter()
+    ]
+  })
+
+  editorView = new EditorView({
+    state: startState,
+    parent: editorRoot.value
+  })
+
+  await loadProblemsFromServer()
+  
+  if (categoryId.value && selectedProblemId.value) {
+    await loadUserCode()
+  }
+})
+
 </script>
 
 <style scoped>

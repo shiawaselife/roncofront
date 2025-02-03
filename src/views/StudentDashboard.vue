@@ -45,7 +45,7 @@
               <div class="w-full bg-gray-200 rounded-full h-2.5">
                 <div class="bg-blue-600 h-2.5 rounded-full" style="width: 98%"></div>
               </div>
-              <button class="w-full mt-4 bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-700">
+              <button @click="$router.push('/typing')" class="w-full mt-4 bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-700">
                 시작하기
               </button>
             </div>
@@ -83,7 +83,7 @@
               <div>완료된 과제: 3/10</div>
             </div>
             <button 
-              @click="$router.push('/code')"
+              @click="$router.push('/problems/code')"
               class="w-full mt-4 bg-emerald-500 text-white rounded-lg py-2 hover:bg-emerald-600"
             >
               바로가기
@@ -164,6 +164,7 @@
 
 import LayoutStudent from '@/layouts/LayoutStudent.vue';
 import { ref, onMounted } from 'vue'
+import axios from 'axios';
 
 const student = ref(null)
 
@@ -171,7 +172,7 @@ const student = ref(null)
 onMounted(async () => {
   // 학생 정보 로드
   try {
-    const response = await axios.get('/api/student/current')
+    const response = await axios.get(`/api/students/${localStorage.getItem('studentId')}`)
     student.value = response.data
   } catch (error) {
     console.error('학생 정보 로드 실패:', error)

@@ -5,6 +5,7 @@ import StudentInfoView from '@/views/StudentInfoView.vue'
 import { comma } from 'postcss/lib/list'
 import Portfolios from '@/views/Portfolios.vue'
 import { adminKey } from '@/AdminKey.js'
+import { compile } from 'vue'
 
 const routes = [
   {
@@ -211,6 +212,22 @@ const routes = [
       window.location.href = '/phpmyadmin'
     },
     name: 'phpmyadmin-redirect'
+  },
+  {
+    meta: {
+      title: 'C/Python 문제'
+    },
+    path: '/problems/code',
+    name: 'CodeProblems',
+    component: () => import('@/views/CodeProblems.vue')
+  },
+  {
+    meta: {
+      title: '타자 연습'
+    },
+    path: '/typing',
+    name: 'typing-pratice',
+    component: () => import('@/views/TypingPratice.vue')
   }
 ]
 
@@ -234,15 +251,28 @@ router.beforeEach((to, from, next) => {
   if (studentId) {
     if (studentName === adminKey) {
       next()
-    } else if (to.path !== '/s') {
-      next('/s') 
-    } else {
-      next()
+    } 
+    else {
+      // 정확한 경로 매칭을 위해 exact paths 사용
+      const allowedPaths = [
+        '/s',
+        '/s/', // trailing slash 대응
+        '/code',
+        '/code/',
+        '/problems',
+        '/problems/code'  // 특정 하위 경로도 명시적으로 추가
+      ]
+      
+      if (allowedPaths.includes(to.path)) {
+        next()
+      } else {
+        next('/s')
+      }
     }
     return
   }
  
   next()
- })
+})
 
 export default router

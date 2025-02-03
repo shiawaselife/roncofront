@@ -6,7 +6,7 @@ import {
   mdiAlertCircle,
   mdiSquareEditOutline,
   mdiAccountMultipleOutline,
-  mdiViewList,
+  mdiTestTube,
   mdiTelevisionGuide,
   mdiDatabase,
   mdiCalendarCheckOutline,
@@ -28,9 +28,15 @@ export default [
     label: '출결 관리',
   },
   {
-    to: '/study',
     icon: mdiSchoolOutline,
-    label: '학습 관리'
+    label: '학습 관리',
+    menu: [
+      {
+        to: '/edit-problem',
+        icon: mdiTestTube,
+        label: '문제 관리'
+      },
+    ]
   },
   {
     to: '/students',
