@@ -228,6 +228,22 @@ const routes = [
     path: '/typing',
     name: 'typing-pratice',
     component: () => import('@/views/TypingPratice.vue')
+  },
+  {
+    meta: {
+      title: '문제 관리'
+    },
+    path: '/manage-problems',
+    name: 'manage-problems',
+    component: () => import('@/views/ManageProblems.vue')
+  },
+  {
+    meta: {
+      title: '타자 결과'
+    },
+    path: '/typing-results',
+    name: 'typing-results',
+    component: () => import('@/views/TypingResults.vue')
   }
 ]
 
@@ -260,7 +276,9 @@ router.beforeEach((to, from, next) => {
         '/code',
         '/code/',
         '/problems',
-        '/problems/code'  // 특정 하위 경로도 명시적으로 추가
+        '/problems/code',  // 특정 하위 경로도 명시적으로 추가,
+        '/typing',
+        '/typing/'
       ]
       
       if (allowedPaths.includes(to.path)) {

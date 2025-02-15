@@ -1,0 +1,1 @@
+import{x as t}from"./index-bd052fb4.js";const a=t.create({baseURL:"/api"}),c=async()=>(await a.get("/problems")).data,p=async(e,s)=>(await a.get(`/code/${e}/${s}`)).data,d=async(e,s="")=>(await a.post("/code/execute",{code:e,input:s})).data,i=async(e,s,o)=>(await a.post("/code/save",{studentId:e,problemId:s,code:o})).data;export{c as a,d as e,p as f,i as s};

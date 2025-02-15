@@ -56,14 +56,38 @@
                     </svg>
                     <h2 class="text-xl font-semibold text-gray-800">출결 현황</h2>
                   </div>
-                  <label class="flex items-center space-x-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      v-model="showAllTodayClasses"
-                      class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" 
-                    />
-                    <span class="text-sm text-gray-600">전체 표시</span>
-                  </label>
+                  <div class="flex items-center space-x-4">
+                    <!-- 검색창 추가 -->
+                    <div class="relative">
+                      <input
+                        type="text"
+                        v-model="searchQuery"
+                        placeholder="학생 이름으로 검색..."
+                        class="w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pl-10"
+                      />
+                      <svg
+                        class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                    </div>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        v-model="showAllTodayClasses"
+                        class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" 
+                      />
+                      <span class="text-sm text-gray-600">전체 표시</span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -74,7 +98,7 @@
                     <h3 class="font-semibold mb-3 text-gray-700">등원</h3>
                     <div class="space-y-3">
                       <div 
-                        v-for="cls in notAttendedClasses"
+                        v-for="cls in paginatedNotAttendedClasses"
                         :key="cls.id"
                         class="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-blue-500 transition-colors duration-200"
                       >
@@ -83,7 +107,7 @@
                             <div>
                               <h3 class="font-semibold text-gray-800">
                                 <button @click="showStudentAttendance(cls.student)" class="hover:text-blue-600">
-                                  {{ cls.student?.name }} ({{ cls.startTime }} ~ {{ cls.endTime }})
+                                  {{ cls.student?.name }} 
                                 </button>
                               </h3>
                               <p class="text-xs text-gray-500 mt-1">
@@ -99,6 +123,27 @@
                           </button>
                         </div>
                       </div>
+
+                      <!-- 등원 페이지네이션 -->
+                      <div v-if="totalNotAttendedPages > 1" class="flex justify-center gap-2 mt-4">
+                        <button
+                          v-for="page in totalNotAttendedPages"
+                          :key="page"
+                          @click="changeNotAttendedPage(page)"
+                          class="px-3 py-1 rounded-lg"
+                          :class="[
+                            currentNotAttendedPage === page
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                          ]"
+                        >
+                          {{ page }}
+                        </button>
+                      </div>
+
+                      <div v-if="filteredNotAttendedClasses.length === 0" class="text-center py-4 text-gray-500">
+                        표시할 학생이 없습니다.
+                      </div>
                     </div>
                   </div>
 
@@ -107,7 +152,7 @@
                     <h3 class="font-semibold mb-3 text-gray-700">하원</h3>
                     <div class="space-y-3">
                       <div 
-                        v-for="cls in attendedClasses"
+                        v-for="cls in paginatedAttendedClasses"
                         :key="cls.id"
                         class="p-4 bg-gray-50 rounded-lg border border-gray-200"
                       >
@@ -163,6 +208,27 @@
                             </button>
                           </div>
                         </div>
+                      </div>
+
+                      <!-- 하원 페이지네이션 -->
+                      <div v-if="totalAttendedPages > 1" class="flex justify-center gap-2 mt-4">
+                        <button
+                          v-for="page in totalAttendedPages"
+                          :key="page"
+                          @click="changeAttendedPage(page)"
+                          class="px-3 py-1 rounded-lg"
+                          :class="[
+                            currentAttendedPage === page
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                          ]"
+                        >
+                          {{ page }}
+                        </button>
+                      </div>
+
+                      <div v-if="filteredAttendedClasses.length === 0" class="text-center py-4 text-gray-500">
+                        표시할 학생이 없습니다.
                       </div>
                     </div>
                   </div>
@@ -494,7 +560,7 @@ const router = useRouter()
 // --- 상태 관리 ---
 const todayClassList = ref([])
 const attendanceList = ref([])
-const showAllTodayClasses = ref(false)
+const showAllTodayClasses = ref(true)
 const activeTimeMenu = ref(null)
 
 // 모달 상태
@@ -518,6 +584,7 @@ const makeupClassList = ref([])
 const studentList = ref([])
 
 const selectedMinutes = ref(10)
+
 
 // --- 라이프사이클 훅 ---
 onMounted(() => {
@@ -940,7 +1007,7 @@ const itemsPerPage = 5
 const paginatedClasses = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage
   return studentMonthlyClasses.value.slice(start, start + itemsPerPage)
-})
+})  
 
 // 총 페이지 수 계산
 const totalPages = computed(() => {
@@ -959,6 +1026,58 @@ function closeAttendanceModal() {
   studentAttendances.value = []
   currentPage.value = 1  // 페이지 초기화 추가
 }
+
+// 상태 관리에 추가
+const searchQuery = ref('')
+const attendancePerPage = ref(5)
+const currentNotAttendedPage = ref(1)
+const currentAttendedPage = ref(1)
+
+// computed 속성 수정/추가
+const filteredNotAttendedClasses = computed(() => {
+  return notAttendedClasses.value.filter(cls => 
+    cls.student?.name?.toLowerCase().includes(searchQuery.value.toLowerCase())
+  )
+})
+
+const filteredAttendedClasses = computed(() => {
+  return attendedClasses.value.filter(cls => 
+    cls.student?.name?.toLowerCase().includes(searchQuery.value.toLowerCase())
+  )
+})
+
+const paginatedNotAttendedClasses = computed(() => {
+  const start = (currentNotAttendedPage.value - 1) * attendancePerPage.value
+  return filteredNotAttendedClasses.value.slice(start, start + attendancePerPage.value)
+})
+
+const paginatedAttendedClasses = computed(() => {
+  const start = (currentAttendedPage.value - 1) * attendancePerPage.value
+  return filteredAttendedClasses.value.slice(start, start + attendancePerPage.value)
+})
+
+const totalNotAttendedPages = computed(() => 
+  Math.ceil(filteredNotAttendedClasses.value.length / attendancePerPage.value)
+)
+
+const totalAttendedPages = computed(() => 
+  Math.ceil(filteredAttendedClasses.value.length / attendancePerPage.value)
+)
+
+// 페이지 변경 함수
+function changeNotAttendedPage(page) {
+  currentNotAttendedPage.value = page
+}
+
+function changeAttendedPage(page) {
+  currentAttendedPage.value = page
+}
+
+// 검색어 변경 시 페이지 리셋
+watch(searchQuery, () => {
+  currentNotAttendedPage.value = 1
+  currentAttendedPage.value = 1
+})
 </script>
 
 <style scoped>

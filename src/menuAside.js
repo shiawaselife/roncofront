@@ -7,7 +7,7 @@ import {
   mdiSquareEditOutline,
   mdiAccountMultipleOutline,
   mdiTestTube,
-  mdiTelevisionGuide,
+  mdiKeyboard,
   mdiDatabase,
   mdiCalendarCheckOutline,
   mdiNote,
@@ -32,10 +32,15 @@ export default [
     label: '학습 관리',
     menu: [
       {
-        to: '/edit-problem',
+        to: '/manage-problems',
         icon: mdiTestTube,
         label: '문제 관리'
       },
+      {
+        to: '/typing-results',
+        icon: mdiKeyboard,
+        label: '타자 결과'
+      }
     ]
   },
   {

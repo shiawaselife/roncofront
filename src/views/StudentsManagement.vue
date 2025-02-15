@@ -60,6 +60,8 @@
                   </button>
                 </div>
                 <div class="text-sm text-gray-600">
+                  ID : {{ student.id }}
+                  <br />
                   {{ student.daysOfWeek.map(day => dayMapping[day]).join(', ') }}
                   <br />
                   수업 시간 : {{ student.startTime }} ~ {{ student.endTime }}
@@ -462,7 +464,7 @@ async function fetchStudents() {
 }
 
 const currentPage = ref(1)
-const itemsPerPage = 6
+const itemsPerPage = 5
 
 // 페이지네이션된 학생 목록
 const paginatedStudents = computed(() => {

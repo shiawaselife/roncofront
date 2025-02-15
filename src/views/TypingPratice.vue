@@ -1,19 +1,7 @@
-# TypingPractice.vue
 <template>
   <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="bg-white rounded-lg shadow mb-6 p-4">
       <div class="flex justify-center gap-4">
-        <button
-          @click="selectLanguage('ko')"
-          :class="[
-            'px-4 py-2 rounded-lg font-medium',
-            selectedLanguage === 'ko'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          ]"
-        >
-          한글
-        </button>
         <button
           @click="selectLanguage('en')"
           :class="[
@@ -24,6 +12,17 @@
           ]"
         >
           English
+        </button>
+        <button
+          @click="selectLanguage('ko')"
+          :class="[
+            'px-4 py-2 rounded-lg font-medium',
+            selectedLanguage === 'ko'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          ]"
+        >
+          한글
         </button>
       </div>
     </div>
@@ -37,7 +36,7 @@
         </div>
         <div class="text-center border-l border-gray-200">
           <div class="text-sm font-medium text-gray-500">
-            {{ selectedLanguage === 'ko' ? '분당 음운수' : '분당 타자수' }}
+            {{ '분당 타자수' }}
           </div>
           <div class="mt-1 text-2xl font-semibold text-gray-900">{{ cpm }}</div>
         </div>
@@ -75,15 +74,18 @@
     <!-- 입력 영역 -->
     <div class="bg-white rounded-lg shadow p-6 mb-6">
       <textarea
+        ref="textareaRef"
         v-model="typedText"
         @input="handleInput"
         @keydown.enter.prevent
-        :disabled="timeUp"
-        placeholder="타이핑을 시작하면 자동으로 시작됩니다..."
+        @compositionstart="handleComposition"
+        @compositionupdate="handleComposition"
+        @compositionend="handleComposition"
+        :disabled="timeUp || showResults"
+        :placeholder="selectedLanguage === 'en' ? 'Start typing in English...' : '타이핑을 시작하면 자동으로 시작됩니다...'"
         class="w-full h-32 p-4 text-lg border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
       ></textarea>
     </div>
-
     <div class="flex justify-center gap-4">
       <button
         @click="resetPractice"
@@ -98,8 +100,15 @@
         나가기
       </button>
     </div>
+
     <!-- 결과 모달 -->
-    <div v-if="showResults" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div 
+      v-if="showResults" 
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" 
+      @click.self="closeResults"
+      @keydown.esc="closeResults"
+      tabindex="0"
+    >
       <div class="bg-white rounded-lg max-w-md w-full mx-4">
         <div class="p-6">
           <h2 class="text-2xl font-bold text-gray-900 mb-4">연습 결과</h2>
@@ -148,7 +157,11 @@ const remainingTime = ref(60)
 const timer = ref(null)
 const showResults = ref(false)
 const timeUp = ref(false)
-const selectedLanguage = ref('ko')
+const selectedLanguage = ref('en')
+
+const textareaRef = ref(null)
+const isComposing = ref(false)
+
 
 const accuracy = computed(() => {
   if (!typedText.value.length) return 0
@@ -194,12 +207,31 @@ const wpm = computed(() => {
   return Math.round((phonemeCount / 8) / timeElapsed);
 });
 
-
-const handleInput = () => {
-  if (!isActive.value && typedText.value.length > 0) {
-    startPractice()
+// handleInput 함수도 강화
+const handleInput = (event) => {
+  if (selectedLanguage.value === 'en') {
+    const input = event.target;
+    const oldValue = input.value;
+    const cursorPos = input.selectionStart;
+    
+    // 한글 문자 즉시 제거
+    const newValue = oldValue.replace(/[가-힣ㄱ-ㅎㅏ-ㅣ]/g, '');
+    
+    if (oldValue !== newValue) {
+      input.value = newValue;
+      typedText.value = newValue;
+      
+      // 커서 위치 복원
+      requestAnimationFrame(() => {
+        input.setSelectionRange(cursorPos, cursorPos);
+      });
+    }
   }
-  checkTyping()
+
+  if (!isActive.value && typedText.value.length > 0) {
+    startPractice();
+  }
+  checkTyping();
 }
 
 const checkTyping = () => {
@@ -230,8 +262,9 @@ const endPractice = () => {
 
 const saveResult = async () => {
   try {
-    await axios.post('http://localhost:8080/api/typing/results', {
-      userId: localStorage.getItem('studentId'), // 실제 사용시 로그인된 사용자 ID로 변경
+    await axios.post('/api/typing/results', {
+      studentId: localStorage.getItem('studentId'), // 실제 사용시 로그인된 사용자 ID로 변경
+      cpm: cpm.value,
       wpm: wpm.value,
       accuracy: accuracy.value,
       textLength: textToType.value.length,
@@ -245,12 +278,16 @@ const saveResult = async () => {
 const resetPractice = () => {
   clearInterval(timer.value)
   typedText.value = ''
+  if (textareaRef.value) {
+    textareaRef.value.value = ''
+  }
   isActive.value = false
   startTime.value = null
   currentIndex.value = 0
   remainingTime.value = 60
   timeUp.value = false
   showResults.value = false
+  isComposing.value = false
   fetchText()
 }
 
@@ -261,6 +298,29 @@ const closeResults = () => {
 
 const selectLanguage = async (lang) => {
   selectedLanguage.value = lang
+  
+  if (textareaRef.value) {
+    textareaRef.value.value = ''
+    typedText.value = ''
+    
+    // 입력 영역 포커스 재설정
+    textareaRef.value.blur()
+    
+    // Windows 입력기 전환을 위한 딜레이
+    setTimeout(() => {
+      textareaRef.value.focus()
+      
+      // 한영 전환 시뮬레이션 (Alt + Shift)
+      const event = new KeyboardEvent('keydown', {
+        key: 'Shift',
+        code: 'ShiftLeft',
+        altKey: true,
+        bubbles: true
+      })
+      textareaRef.value.dispatchEvent(event)
+    }, 100)
+  }
+
   if (isActive.value) {
     resetPractice()
   } else {
@@ -271,20 +331,86 @@ const selectLanguage = async (lang) => {
 const fetchText = async () => {
   try {
     const response = await axios.get(
-      `http://localhost:8080/api/typing/texts/random?language=${selectedLanguage.value}`
+      `/api/typing/texts/random?language=${selectedLanguage.value}`
     )
-    textToType.value = response.data.content
+    if (response.data && response.data.content) {
+      textToType.value = response.data.content
+    } else {
+      // API 응답은 성공했지만 content가 없는 경우
+      textToType.value = selectedLanguage.value === 'en' 
+        ? 'The quick brown fox jumps over the lazy dog. This is a sample text for typing practice.'
+        : '타자 연습을 위한 기본 텍스트입니다. 이것은 서버 연결에 실패했을 때 표시됩니다.'
+    }
   } catch (error) {
     console.error('텍스트 가져오기 실패:', error)
-    textToType.value = '기본 연습 텍스트입니다. 이것은 서버 연결에 실패했을 때 표시됩니다.'
+    // API 호출 실패 시 기본 텍스트 설정
+    textToType.value = selectedLanguage.value === 'en' 
+      ? 'The quick brown fox jumps over the lazy dog. This is a sample text for typing practice.'
+      : '타자 연습을 위한 기본 텍스트입니다. 이것은 서버 연결에 실패했을 때 표시됩니다.'
+  }
+}
+
+const handleComposition = (event) => {
+  if (selectedLanguage.value === 'en') {
+    event.preventDefault();
+    
+    // 입력 중인 IME 입력을 즉시 취소
+    const input = event.target;
+    const oldValue = input.value;
+    
+    // 현재 커서 위치 저장
+    const cursorPos = input.selectionStart;
+    
+    // 모든 한글 문자 제거 (자모음 포함)
+    const newValue = oldValue.replace(/[가-힣ㄱ-ㅎㅏ-ㅣ]/g, '');
+    
+    if (oldValue !== newValue) {
+      input.value = newValue;
+      typedText.value = newValue;
+      
+      // 커서 위치 복원
+      input.setSelectionRange(cursorPos, cursorPos);
+      
+      // IME 입력 취소를 위한 포커스 재설정
+      input.blur();
+      requestAnimationFrame(() => {
+        input.focus();
+      });
+    }
   }
 }
 
 onMounted(() => {
-  fetchText()
+  fetchText().catch(() => {
+    // fetchText 실패 시에도 기본 텍스트 설정
+    textToType.value = selectedLanguage.value === 'en' 
+      ? 'The quick brown fox jumps over the lazy dog. This is a sample text for typing practice.'
+      : '타자 연습을 위한 기본 텍스트입니다. 이것은 서버 연결에 실패했을 때 표시됩니다.'
+  })
 })
+</script> 
 
-onUnmounted(() => {
-  clearInterval(timer.value)
-})
-</script>
+<style scoped>
+textarea {
+  ime-mode: auto;
+}
+
+textarea[lang="en"] {
+  ime-mode: disabled !important;
+}
+
+textarea[lang="ko"] {
+  ime-mode: active !important;
+}
+
+/* IE/Edge specific */
+@media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+  textarea[lang="en"] {
+    -ms-ime-mode: disabled !important;
+  }
+  
+  textarea[lang="ko"] {
+    -ms-ime-mode: active !important;
+  }
+}
+</style>
