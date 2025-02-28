@@ -31,8 +31,8 @@ const form = reactive({
   name: '',
   phone: '',
   parent: '',
-  startTime: '',
-  endTime: '',
+  startTime: '01:30',
+  endTime: '03:00',
   curriculum: '',
   residence: '',
   homePhone: '',
@@ -196,22 +196,6 @@ const submit = async () => {
                   }"
                 />
               </div>
-            </div>
-
-            <!-- 수업 시간 -->
-            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <!-- 시작 시간 -->
-              <FormControl
-                v-model="form.startTime"
-                placeholder="시작 시간 (ex: 10:00)"
-                class="w-full"
-              />
-              <!-- 종료 시간 -->
-              <FormControl
-                v-model="form.endTime"
-                placeholder="종료 시간 (ex: 12:00)"
-                class="w-full"
-              />
             </div>
           </FormField>
 

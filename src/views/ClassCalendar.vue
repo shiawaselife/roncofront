@@ -101,7 +101,6 @@
                   <table class="w-full">
                     <thead>
                       <tr class="border-b border-gray-100">
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">시간</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">학생</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">수업 종류</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
@@ -113,9 +112,6 @@
                         :key="cls.id"
                         class="hover:bg-gray-50 transition-colors"
                       >
-                        <td class="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                          {{ cls.startTime }} ~ {{ cls.endTime }}
-                        </td>
                         <td class="px-4 py-3 text-sm font-medium text-gray-900">
                           {{ cls.student.name }}
                         </td>

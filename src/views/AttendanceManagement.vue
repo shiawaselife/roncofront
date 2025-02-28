@@ -537,7 +537,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import dayjs from 'dayjs'
 import axios from 'axios'
 
@@ -545,6 +545,8 @@ import LayoutAuthenticated from '@/layouts/LayoutAuthenticated.vue'
 import SectionMain from '@/components/SectionMain.vue'
 
 import { useRouter } from 'vue-router'
+
+import { useWebSocketStore } from '@/stores/WebSocketStore'
 
 import { 
   mdiCalendarCheckOutline,
@@ -555,6 +557,8 @@ import {
   mdiCalendarOutline
 } from '@mdi/js'
 
+
+const webSocketStore = useWebSocketStore()
 const router = useRouter()
 
 // --- 상태 관리 ---
@@ -588,9 +592,14 @@ const selectedMinutes = ref(10)
 
 // --- 라이프사이클 훅 ---
 onMounted(() => {
+  webSocketStore.subscribe('/topic/activity-logs', handleActivityLog)
   fetchTodayClasses()
   fetchTodayAttendance()
   fetchStudents()
+})
+
+onUnmounted(() => {
+  webSocketStore.unsubscribe('/topic/activity-logs', handleActivityLog)
 })
 
 // --- API 호출 함수 ---
@@ -751,6 +760,25 @@ const notAttendedClasses = computed(() => {
 const attendedClasses = computed(() => {
   return todayClassList.value.filter(cls => {
     return attendanceList.value.some(a => a.studentId === cls.student.id)
+  }).sort((a, b) => {
+    // 아직 수업이 끝나지 않은 클래스를 우선 정렬
+    const aEnded = isClassEnded(a)
+    const bEnded = isClassEnded(b)
+    
+    if (aEnded !== bEnded) {
+      return aEnded ? 1 : -1
+    }
+    
+    // 수업이 끝나지 않은 경우, 남은 시간이 적은 순으로 정렬
+    if (!aEnded && !bEnded) {
+      const aRemainingMinutes = dayjs().diff(dayjs().hour(a.endTime.split(':')[0]).minute(a.endTime.split(':')[1]), 'minute')
+      const bRemainingMinutes = dayjs().diff(dayjs().hour(b.endTime.split(':')[0]).minute(b.endTime.split(':')[1]), 'minute')
+      
+      return Math.abs(aRemainingMinutes) - Math.abs(bRemainingMinutes)
+    }
+    
+    // 수업이 끝난 경우, 최근에 끝난 순으로 정렬
+    return dayjs(b.endTime).diff(dayjs(a.endTime))
   })
 })
 
@@ -865,7 +893,7 @@ function getClassDuration(cls) {
 }
 
 // 수업 시간(분) 계산
-function getClassDurationMinutes(cls) {
+function getClassDurationMinutes(cls) { 
   if (!cls) return 0
   const start = dayjs(`2000-01-01 ${cls.startTime}`)
   const end = dayjs(`2000-01-01 ${cls.endTime}`)
@@ -1078,6 +1106,23 @@ watch(searchQuery, () => {
   currentNotAttendedPage.value = 1
   currentAttendedPage.value = 1
 })
+
+// WebSocket 메시지 핸들러
+async function handleActivityLog(message) {
+  const logEvent = message
+  
+  // attendance 타입의 로그인 경우 데이터 새로고침
+  if (logEvent.type === 'attendance') {
+    // 등/하원 모두에 대해 데이터 새로고침
+    setTimeout(async function () {
+      await Promise.all([
+        fetchTodayClasses(),
+        fetchTodayAttendance()
+      ])
+    }, 500)
+    
+  }
+}
 </script>
 
 <style scoped>

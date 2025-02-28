@@ -63,8 +63,6 @@
                   ID : {{ student.id }}
                   <br />
                   {{ student.daysOfWeek.map(day => dayMapping[day]).join(', ') }}
-                  <br />
-                  수업 시간 : {{ student.startTime }} ~ {{ student.endTime }}
                 </div>
               </div>
 

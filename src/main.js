@@ -30,6 +30,10 @@ const toastOptions = {
   rtl: false
 }
 
+if (typeof global === 'undefined') {
+  window.global = window;
+}
+
 // Init Pinia
 const pinia = createPinia()
 

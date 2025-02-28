@@ -18,7 +18,9 @@ import {
   mdiNewspaper,
   mdiGraph,
   mdiSchool,
-  mdiDirections
+  mdiDirections,
+  mdiChatQuestion,
+  mdiHeadQuestion
 } from '@mdi/js'
 
 export default [
@@ -40,6 +42,16 @@ export default [
         to: '/typing-results',
         icon: mdiKeyboard,
         label: '타자 결과'
+      },
+      {
+        to: '/manage-tests',
+        icon: mdiChatQuestion,
+        label: '문제 관리'
+      },
+      {
+        to: '/tests-results',
+        icon: mdiHeadQuestion,
+        label: '문제 결과'
       }
     ]
   },

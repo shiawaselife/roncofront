@@ -19,6 +19,11 @@ export default defineConfig({
       '/v1/search': {  // 변경된 부분
         target: 'https://openapi.naver.com',
         changeOrigin: true,
+      },
+      '/ws': {  // WebSocket 연결을 위한 프록시 추가
+        target: 'http://localhost:8080',
+        ws: true,  // WebSocket 프록시 설정
+        changeOrigin: true
       }
     },
   },
@@ -27,4 +32,7 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+  define: {
+    global: 'window'
+  }
 });

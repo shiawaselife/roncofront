@@ -244,7 +244,31 @@ const routes = [
     path: '/typing-results',
     name: 'typing-results',
     component: () => import('@/views/TypingResults.vue')
-  }
+  },
+  {
+    meta: {
+      title: '시험'
+    },
+    path: '/tests',
+    name: 'tests',
+    component: () => import('@/views/TestView.vue')
+  },
+  {
+    meta: {
+      title: '시험'
+    },
+    path: '/manage-tests',
+    name: 'manage-tests',
+    component: () => import('@/views/TestManagement.vue')
+  },
+  {
+    meta: {
+      title: '시험'
+    },
+    path: '/tests-results',
+    name: 'tests-results',
+    component: () => import('@/views/TestResultView.vue')
+  },
 ]
 
 const router = createRouter({
@@ -278,7 +302,8 @@ router.beforeEach((to, from, next) => {
         '/problems',
         '/problems/code',  // 특정 하위 경로도 명시적으로 추가,
         '/typing',
-        '/typing/'
+        '/typing/',
+        '/tests',
       ]
       
       if (allowedPaths.includes(to.path)) {
