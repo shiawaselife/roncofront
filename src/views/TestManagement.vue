@@ -15,7 +15,17 @@
         <div class="p-4 bg-gray-50 border-b border-gray-200">
           <div class="flex flex-wrap gap-4">
             <div class="w-full md:w-64">
-              <label class="block text-sm font-medium text-gray-700 mb-1">카테고리</label>
+              <div class="flex justify-between items-center mb-1">
+                <label class="block text-sm font-medium text-gray-700">카테고리</label>
+                <button 
+                  @click="openCategoryModal(null)"
+                  class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  카테고리 추가
+                </button>
+              </div>
               <select 
                 v-model="selectedCategoryId"
                 class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
@@ -356,6 +366,54 @@
               </button>
               <button 
                 @click="showQuestionModal = false"
+                type="button"
+                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 카테고리 추가/수정 모달 -->
+      <div v-if="showCategoryModal" class="fixed inset-0 overflow-y-auto z-50">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showCategoryModal = false"></div>
+          <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+              <div class="sm:flex sm:items-start">
+                <div class="w-full">
+                  <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                    {{ currentCategory.id ? '카테고리 수정' : '새 카테고리 추가' }}
+                  </h3>
+                  <div class="space-y-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">이름</label>
+                      <input 
+                        type="text" 
+                        v-model="currentCategory.name"
+                        class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">설명</label>
+                      <textarea 
+                        v-model="currentCategory.description"
+                        rows="3"
+                        class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+              <button 
+                @click="saveCategory"
+                type="button"
+                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
+                저장
+              </button>
+              <button 
+                @click="showCategoryModal = false"
                 type="button"
                 class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                 취소
@@ -762,6 +820,69 @@ const toggleQuestionList = async (test) => {
     // 새로운 시험 선택
     selectedTest.value = test
     await fetchQuestions(test.id)
+  }
+}
+
+// 카테고리 모달 관련 상태 변수 추가
+const showCategoryModal = ref(false)
+const currentCategory = ref({
+  id: null,
+  name: '',
+  description: ''
+})
+
+// 카테고리 모달 열기
+const openCategoryModal = (category) => {
+  if (category) {
+    // 기존 카테고리 수정
+    currentCategory.value = { ...category }
+  } else {
+    // 새 카테고리 추가
+    currentCategory.value = {
+      id: null,
+      name: '',
+      description: ''
+    }
+  }
+  showCategoryModal.value = true
+}
+
+// 카테고리 저장
+const saveCategory = async () => {
+  try {
+    if (!currentCategory.value.name) {
+      alert('카테고리 이름을 입력해주세요.')
+      return
+    }
+    
+    let response
+    if (currentCategory.value.id) {
+      // 카테고리 수정
+      response = await axios.put(
+        `${API_URL}/test-categories/${currentCategory.value.id}`, 
+        currentCategory.value
+      )
+    } else {
+      // 새 카테고리 추가
+      response = await axios.post(
+        `${API_URL}/test-categories`, 
+        currentCategory.value
+      )
+    }
+    
+    showCategoryModal.value = false
+    await fetchCategories() // 카테고리 목록 새로고침
+    
+    alert(currentCategory.value.id ? '카테고리가 수정되었습니다.' : '새 카테고리가 추가되었습니다.')
+  } catch (error) {
+    console.error('카테고리 저장 실패:', error)
+    
+    // 서버 응답 메시지 확인
+    if (error.response && error.response.data && error.response.data.message) {
+      alert(`오류: ${error.response.data.message}`)
+    } else {
+      alert('카테고리를 저장하는데 실패했습니다.')
+    }
   }
 }
 

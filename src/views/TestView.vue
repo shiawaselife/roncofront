@@ -83,10 +83,15 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">시험</label>
                 <select
                   v-model="selectedTestId"
+                  @change="handleTestSelection(selectedTestId)"
                   class="w-full bg-gray-50 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200">
                   <option value="">시험 선택</option>
-                  <option v-for="test in testsInSelectedCategory" :key="test.id" :value="test.id">
+                  <option 
+                    v-for="test in testsInSelectedCategory" 
+                    :key="test.id" 
+                    :value="test.id">
                     {{ test.title }} ({{ formatDuration(test.duration) }})
+                    {{ test.isCompleted ? '- 이미 제출됨' : '' }}
                   </option>
                 </select>
               </div>
@@ -94,8 +99,11 @@
             
             <div v-if="selectedTest" class="mt-8">
               <div class="bg-indigo-50 rounded-lg overflow-hidden border border-indigo-100">
-                <div class="border-b border-indigo-100 bg-indigo-100/60 px-6 py-4">
+                <div class="border-b border-indigo-100 bg-indigo-100/60 px-6 py-4 flex justify-between items-center">
                   <h3 class="font-semibold text-indigo-800 text-lg">{{ selectedTest.title }}</h3>
+                  <div v-if="selectedTest.isCompleted" class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                    이미 제출됨
+                  </div>
                 </div>
                 
                 <div class="p-6">
@@ -126,7 +134,18 @@
                 </div>
                 
                 <div class="px-6 py-4 bg-indigo-50 border-t border-indigo-100 flex justify-center">
+                  <div v-if="selectedTest.isCompleted" class="flex space-x-4">
+                    <button
+                      @click="loadUserTest"
+                      class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md shadow-sm transition duration-200 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                      결과 보기
+                    </button>
+                  </div>
                   <button
+                    v-else
                     @click="startTest"
                     class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md shadow-sm transition duration-200 flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -364,12 +383,20 @@ const isTestCompleted = ref(false)
 const testResult = ref(null)
 const remainingTime = ref(0)
 const startTime = ref(0)
+const completedTests = ref([]) // 이미 제출한 시험 ID 목록
 let timerInterval = null
 
-// 계산된 속성들
 const testsInSelectedCategory = computed(() => {
   if (!selectedCategoryId.value) return []
-  return tests.value.filter(test => test.categoryId === Number(selectedCategoryId.value))
+  
+  // 카테고리별 시험 목록
+  const filteredTests = tests.value.filter(test => test.categoryId === Number(selectedCategoryId.value))
+  
+  // 각 시험에 완료 여부 표시 추가
+  return filteredTests.map(test => ({
+    ...test,
+    isCompleted: completedTests.value.includes(test.id)
+  }))
 })
 
 const selectedTest = computed(() => {
@@ -553,6 +580,20 @@ const startTest = async () => {
     return
   }
   
+  // 이미 제출한 시험인지 확인
+  try {
+    const result = await fetchUserTestResult(studentId.value, selectedTestId.value)
+    if (result) {
+      alert('이미 제출한 시험입니다. 결과를 확인합니다.')
+      testResult.value = result
+      isTestCompleted.value = true
+      return
+    }
+  } catch (error) {
+    // 결과가 없는 경우 시험 시작 진행
+    console.log('시험 결과 없음, 시험 시작 진행')
+  }
+  
   try {
     const questions = await fetchTestQuestions(selectedTestId.value)
     testQuestions.value = questions
@@ -683,6 +724,10 @@ const submitTest = async () => {
     // 타이머 다시 시작
     startTimer()
   }
+
+
+  await loadTests()
+  await loadCompletedTests() // 완료된 시험 목록 로드
 }
 
 const resetTest = () => {
@@ -691,9 +736,41 @@ const resetTest = () => {
   testResult.value = null
 }
 
+
+const handleTestSelection = async (testId) => {
+  selectedTestId.value = testId
+  
+  if (completedTests.value.includes(testId)) {
+    try {
+      const result = await fetchUserTestResult(studentId.value, testId)
+      if (result) {
+        alert('이미 제출한 시험입니다. 결과를 확인합니다.')
+        testResult.value = result
+        isTestCompleted.value = true
+      }
+    } catch (error) {
+      console.error('시험 결과 조회 실패:', error)
+    }
+  }
+}
+
+const loadCompletedTests = async () => {
+  if (!studentId.value) return
+  
+  try {
+    // 서버에서 완료된 모든 시험 목록 가져오기 (이 부분은 API가 필요)
+    const response = await axios.get(`${API_URL}/tests/student/${studentId.value}/submissions`)
+    completedTests.value = response.data.map(result => result.testId)
+  } catch (error) {
+    console.error('완료된 시험 목록 로드 실패:', error)
+    completedTests.value = []
+  }
+}
+
 // 라이프사이클 훅
 onMounted(async () => {
   await loadTests()
+  await loadCompletedTests() // 완료된 시험 목록 로드
   
   // 저장된 테스트 진행 상황이 있는지 확인
   const hasOngoingTest = await loadTestProgress()

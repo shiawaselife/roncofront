@@ -158,29 +158,59 @@
                 </button>
               </div>
 
+              <!-- 월별 출결 통계 -->
+              <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="p-4 rounded-lg bg-green-50 border border-green-100">
+                  <div class="text-sm text-gray-600">출석</div>
+                  <div class="text-2xl font-semibold text-green-600">{{ attendanceCount }}</div>
+                </div>
+                <div class="p-4 rounded-lg bg-red-50 border border-red-100">
+                  <div class="text-sm text-gray-600">결석</div>
+                  <div class="text-2xl font-semibold text-red-600">{{ absenceCount }}</div>
+                </div>
+                <div class="p-4 rounded-lg bg-purple-50 border border-purple-100">
+                  <div class="text-sm text-gray-600">보강</div>
+                  <div class="text-2xl font-semibold text-purple-600">{{ makeupCount }}</div>
+                </div>
+              </div>
+
               <div class="overflow-hidden rounded-lg border border-gray-200">
                 <table class="min-w-full divide-y divide-gray-200">
                   <thead class="bg-gray-50">
                     <tr>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">날짜</th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">요일</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">등원시간</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">시간</th>
                     </tr>
                   </thead>
                   <tbody class="bg-white divide-y divide-gray-200">
                     <tr 
-                      v-for="attendance in monthlyAttendanceList" 
-                      :key="attendance.id"
+                      v-for="record in filteredAttendanceRecords" 
+                      :key="record.id"
                       class="hover:bg-gray-50"
                     >
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {{ formatDate(attendance.date) }}
+                        {{ formatDate(record.type === 'absence' ? record.absenceDate : record.attendanceDate) }}
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {{ koreanDayOfWeek(attendance.date) }}
+                        {{ koreanDayOfWeek(record.type === 'absence' ? record.absenceDate : record.attendanceDate) }}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <span 
+                          class="px-2 py-1 rounded-full text-xs font-medium"
+                          :class="getStatusClass(record)"
+                        >
+                          {{ getStatusText(record) }}
+                        </span>
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {{ formatTime(attendance.createdAt) }}
+                        {{ record.type === 'absence' ? '-' : `${record.startTime || '-'} ~ ${record.endTime || '-'}` }}
+                      </td>
+                    </tr>
+                    <tr v-if="filteredAttendanceRecords.length === 0">
+                      <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
+                        해당 기간에 출결 기록이 없습니다.
                       </td>
                     </tr>
                   </tbody>
@@ -231,6 +261,7 @@
               >
                 <option value="week">주간</option>
                 <option value="month">월간</option>
+                <option value="all">전체</option>
               </select>
               <select 
                 v-model="selectedOrder"
@@ -243,21 +274,28 @@
 
             <div class="space-y-3">
               <div 
-                v-for="cls in filteredMakeupClasses" 
-                :key="cls.id"
+                v-for="makeupAttendance in studentMakeupAttendances" 
+                :key="makeupAttendance.id"
                 class="p-4 bg-gray-50 rounded-lg border border-gray-200"
               >
                 <div class="flex justify-between items-center">
                   <div>
-                    <div class="font-semibold text-gray-900">{{ cls.student?.name }}</div>
+                    <div class="text-sm text-gray-900">{{ formatDate(makeupAttendance.attendanceDate) }}</div>
                     <div class="text-sm text-gray-600">
-                      {{ cls.classDate }} ({{ cls.startTime }}~{{ cls.endTime }})
+                      {{ makeupAttendance.startTime || '-' }} ~ {{ makeupAttendance.endTime || '-' }}
+                    </div>
+                    <div v-if="makeupAttendance.makeupType" class="text-xs text-gray-500 mt-1">
+                      {{ makeupAttendance.makeupType }}
                     </div>
                   </div>
-                  <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                  <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
                     보강
                   </span>
                 </div>
+              </div>
+              
+              <div v-if="studentMakeupAttendances.length === 0" class="text-center py-6 text-gray-500">
+                보강 기록이 없습니다.
               </div>
             </div>
           </div>
@@ -318,7 +356,7 @@ const filteredStudents = computed(() => {
 function selectStudent(student) {
   selected.value = student
   fetchStudentAttendance(student.id)
-  fetchMakeupClasses(student.id)
+  fetchStudentMakeupAttendances(student.id)
 }
 
 function goEditStudent(studentId) {
@@ -345,23 +383,41 @@ function clearSearch() {
 // ------------------------------
 const selectedYear = ref(dayjs().year())
 const selectedMonth = ref(dayjs().month() + 1)
-const monthlyAttendanceList = ref([])
+const attendanceRecords = ref([])
+const absenceRecords = ref([])
 
 // 날짜 포맷팅
 function formatDate(date) {
+  if (!date) return '-'
   return dayjs(date).format('YYYY-MM-DD')
 }
 
 // 요일 한글로 변환
 function koreanDayOfWeek(date) {
+  if (!date) return '-'
   const days = ['일', '월', '화', '수', '목', '금', '토']
   const dayIndex = dayjs(date).day()
   return days[dayIndex] + '요일'
 }
 
-// 시간 포맷팅 (HH:mm)
-function formatTime(datetime) {
-  return datetime ? dayjs(datetime).format('HH:mm') : '-'
+// 출결 상태 텍스트
+function getStatusText(record) {
+  if (record.type === 'absence') {
+    return '결석'
+  } else {
+    return record.makeup ? '보강' : '출석'
+  }
+}
+
+// 출결 상태 클래스
+function getStatusClass(record) {
+  if (record.type === 'absence') {
+    return 'bg-red-100 text-red-800'
+  } else if (record.makeup) {
+    return 'bg-purple-100 text-purple-800'
+  } else {
+    return 'bg-green-100 text-green-800'
+  }
 }
 
 // 코스별 프로그레스바 색상
@@ -374,37 +430,59 @@ function getCourseProgressClass(courseName) {
   return classes[courseName] || 'bg-gray-500'
 }
 
-// 출결 상태별 횟수 계산
-function getAttendanceCount(status) {
-  return monthlyAttendanceList.value.filter(a => a.status === status).length
-}
+// 출결 기록 통합 및 정렬
+const filteredAttendanceRecords = computed(() => {
+  // 출석과 결석 기록을 통합하여 하나의 배열로 만든다
+  const combinedRecords = [
+    ...attendanceRecords.value.map(record => ({ ...record, type: 'attendance' })),
+    ...absenceRecords.value.map(record => ({ ...record, type: 'absence' }))
+  ]
+  
+  // 날짜에 따라 내림차순 정렬 (최신 기록이 위에 표시)
+  return combinedRecords.sort((a, b) => {
+    const dateA = dayjs(a.type === 'absence' ? a.absenceDate : a.attendanceDate)
+    const dateB = dayjs(b.type === 'absence' ? b.absenceDate : b.attendanceDate)
+    return dateB.valueOf() - dateA.valueOf()
+  })
+})
 
-// 출석률 계산
-function calculateAttendanceRate() {
-  const total = monthlyAttendanceList.value.length
-  if (total === 0) return 0
-  
-  const attended = monthlyAttendanceList.value.filter(a => 
-    a.status === '출석' || a.status === '지각'
-  ).length
-  
-  return Math.round((attended / total) * 100)
-}
+// 출석, 결석, 보강 횟수 계산
+const attendanceCount = computed(() => 
+  attendanceRecords.value.filter(r => !r.makeup).length
+)
+
+const absenceCount = computed(() => 
+  absenceRecords.value.length
+)
+
+const makeupCount = computed(() => 
+  attendanceRecords.value.filter(r => r.makeup).length
+)
 
 // 학생별 출결 조회
 async function fetchStudentAttendance(studentId) {
   if (!studentId) return
   
   try {
-    const res = await axios.get(`/api/attendance/${studentId}`, {
+    // 출석 기록 조회
+    const attendanceRes = await axios.get(`/api/attendance/student/${studentId}`, {
       params: {
         year: selectedYear.value,
         month: selectedMonth.value
       }
     })
-    monthlyAttendanceList.value = res.data
+    attendanceRecords.value = attendanceRes.data
+    
+    // 결석 기록 조회
+    const absenceRes = await axios.get(`/api/absence/${studentId}`, {
+      params: {
+        year: selectedYear.value,
+        month: selectedMonth.value
+      }
+    })
+    absenceRecords.value = absenceRes.data
   } catch (err) {
-    console.error(err)
+    console.error('학생 출결 데이터 조회 실패:', err)
     alert('학생 출결 데이터 조회 실패')
   }
 }
@@ -412,14 +490,14 @@ async function fetchStudentAttendance(studentId) {
 // ------------------------------
 // 보강 목록
 // ------------------------------
-const selectedRange = ref('week')
-const selectedOrder = ref('asc')
-const makeupClassList = ref([])
+const selectedRange = ref('month')
+const selectedOrder = ref('desc')
+const studentMakeupAttendances = ref([])
 
 // Watchers
 watch([selectedRange, selectedOrder], () => {
   if (selected.value) {
-    fetchMakeupClasses(selected.value.id)
+    fetchStudentMakeupAttendances(selected.value.id)
   }
 })
 
@@ -429,19 +507,19 @@ watch([selectedYear, selectedMonth], () => {
   }
 })
 
-async function fetchMakeupClasses(studentId) {
+async function fetchStudentMakeupAttendances(studentId) {
   if (!studentId) return
 
   try {
-    const res = await axios.get('/api/classes/makeup', {
+    const res = await axios.get(`/api/attendance/makeup/student/${studentId}`, {
       params: {
         range: selectedRange.value,
         order: selectedOrder.value
       }
     })
-    makeupClassList.value = res.data
+    studentMakeupAttendances.value = res.data
   } catch (err) {
-    console.error(err)
+    console.error('보강 목록 조회 실패:', err)
     alert('보강 목록 조회 실패')
   }
 }
@@ -456,7 +534,7 @@ async function fetchStudents() {
     const res = await axios.get('/api/students')
     students.value = res.data
   } catch (err) {
-    console.error(err)
+    console.error('학생 목록 불러오기 실패:', err)
     alert('학생 목록 불러오기 실패')
   }
 }
@@ -493,12 +571,6 @@ function nextPage() {
 watch(searchQuery, () => {
   currentPage.value = 1
 })
-
-const filteredMakeupClasses = computed(() => {
-  if (!selected.value) return []
-  return makeupClassList.value.filter(cls => cls.student?.id === selected.value.id)
-})
-
 </script>
 
 <style scoped>

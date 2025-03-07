@@ -53,7 +53,7 @@
 
           <!-- 코딩 프로그램 -->
           <div class="bg-white rounded-lg shadow p-6 border-t-4 border-yellow-500">
-            <h2 class="text-lg font-semibold mb-4">COS Pro/COS</h2>
+            <h2 class="text-lg font-semibold mb-4">시험</h2>
             <div class="space-y-2">
               <div class="flex justify-between">
                 <span>현재 과정</span>
@@ -66,7 +66,7 @@
               <div class="w-full bg-gray-200 rounded-full h-2.5">
                 <div class="bg-yellow-500 h-2.5 rounded-full" style="width: 45%"></div>
               </div>
-              <button class="w-full mt-4 bg-yellow-500 text-white rounded-lg py-2 hover:bg-yellow-600">
+              <button @click="$router.push('/tests')" class="w-full mt-4 bg-yellow-500 text-white rounded-lg py-2 hover:bg-yellow-600">
                 시작하기
               </button>
             </div>

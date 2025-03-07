@@ -8,7 +8,7 @@
             <svg class="w-8 h-8 text-blue-600" viewBox="0 0 24 24">
               <path fill="currentColor" :d="mdiCalendarMonth" />
             </svg>
-            <h1 class="text-2xl font-bold text-gray-800 ml-3">날짜별 수업 목록</h1>
+            <h1 class="text-2xl font-bold text-gray-800 ml-3">날짜별 출결 현황</h1>
           </div>
         </div>
 
@@ -57,7 +57,7 @@
 
                   <!-- 날짜 -->
                   <div
-                    v-for="{ date, current, hasClasses } in calendarDays"
+                    v-for="{ date, current, hasRecords } in calendarDays"
                     :key="date"
                     class="aspect-square p-0.5"
                   >
@@ -66,7 +66,7 @@
                       :class="[
                         current ? 'hover:bg-blue-50' : 'opacity-30',
                         isSelectedDate(date) ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-sm' : '',
-                        hasClasses && !isSelectedDate(date) ? 'bg-blue-50' : ''
+                        hasRecords && !isSelectedDate(date) ? 'bg-blue-50' : ''
                       ]"
                       @click="selectDate(date)"
                     >
@@ -77,7 +77,7 @@
                         {{ new Date(date).getDate() }}
                       </span>
                       <div 
-                        v-if="hasClasses && !isSelectedDate(date)" 
+                        v-if="hasRecords && !isSelectedDate(date)" 
                         class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-blue-400"
                       ></div>
                     </button>
@@ -87,7 +87,7 @@
             </div>
           </div>
 
-          <!-- 오른쪽: 수업 목록 (3/5) -->
+          <!-- 오른쪽: 출결 목록 (3/5) -->
           <div class="col-span-3">
             <div class="bg-white rounded-xl shadow-sm overflow-hidden">
               <div class="border-b border-gray-100 p-6">
@@ -102,40 +102,55 @@
                     <thead>
                       <tr class="border-b border-gray-100">
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">학생</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">수업 종류</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">종류</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">시간</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                       <tr 
-                        v-for="cls in selectedDateClasses" 
-                        :key="cls.id"
+                        v-for="record in selectedDateRecords" 
+                        :key="`${record.type}-${record.id}`"
                         class="hover:bg-gray-50 transition-colors"
                       >
                         <td class="px-4 py-3 text-sm font-medium text-gray-900">
-                          {{ cls.student.name }}
+                          {{ getStudentName(record.studentId) }}
                         </td>
                         <td class="px-4 py-3 text-sm">
                           <span 
-                            v-if="cls.makeup" 
+                            v-if="record.type === 'absence'" 
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                          >
+                            결석
+                          </span>
+                          <span 
+                            v-else-if="record.makeup" 
                             class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
                           >
-                            {{ cls.makeupType }}
+                            {{ record.makeupType || '보강' }}
                           </span>
-                          <span v-else class="text-gray-600">정규수업</span>
+                          <span 
+                            v-else 
+                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                          >
+                            일반 출석
+                          </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-500">
+                          {{ record.type === 'absence' ? '-' : `${record.startTime || '-'} ~ ${record.endTime || '-'}` }}
                         </td>
                         <td class="px-4 py-3 text-sm text-center">
                           <span 
                             class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                            :class="classStatusStyle(cls)"
+                            :class="getStatusStyle(record)"
                           >
-                            {{ classStatusText(cls) }}
+                            {{ getStatusText(record) }}
                           </span>
                         </td>
                       </tr>
-                      <tr v-if="selectedDateClasses.length === 0">
+                      <tr v-if="selectedDateRecords.length === 0">
                         <td colspan="4" class="px-4 py-8 text-center text-gray-500">
-                          이 날짜에는 예정된 수업이 없습니다.
+                          이 날짜에는 출결 기록이 없습니다.
                         </td>
                       </tr>
                     </tbody>
@@ -167,9 +182,11 @@ import SectionMain from '@/components/SectionMain.vue'
 const currentYear = ref(new Date().getFullYear())
 const currentMonth = ref(new Date().getMonth())
 const selectedDate = ref(dayjs().format('YYYY-MM-DD'))
-const classesByDate = ref({}) // { '2024-01-01': [...classes] }
 
-const attendanceByDate = ref({})
+// 출결 기록 저장 객체
+const attendancesByDate = ref({}) // { '2024-01-01': [...attendance_records] }
+const absencesByDate = ref({}) // { '2024-01-01': [...absence_records] }
+const studentList = ref([]) // 학생 목록
 
 // 달력 날짜 계산
 const calendarDays = computed(() => {
@@ -181,10 +198,11 @@ const calendarDays = computed(() => {
   const prevMonthLastDate = new Date(currentYear.value, currentMonth.value, 0)
   for (let i = firstDay - 1; i >= 0; i--) {
     const d = new Date(currentYear.value, currentMonth.value - 1, prevMonthLastDate.getDate() - i)
+    const dateStr = d.toISOString().split('T')[0]
     days.push({
-      date: d.toISOString().split('T')[0],
+      date: dateStr,
       current: false,
-      hasClasses: !!classesByDate.value[d.toISOString().split('T')[0]]
+      hasRecords: hasRecordsForDate(dateStr)
     })
   }
 
@@ -192,10 +210,11 @@ const calendarDays = computed(() => {
   const lastDate = new Date(currentYear.value, currentMonth.value + 1, 0)
   for (let i = 1; i <= lastDate.getDate(); i++) {
     const d = new Date(currentYear.value, currentMonth.value, i)
+    const dateStr = d.toISOString().split('T')[0]
     days.push({
-      date: d.toISOString().split('T')[0],
+      date: dateStr,
       current: true,
-      hasClasses: !!classesByDate.value[d.toISOString().split('T')[0]]
+      hasRecords: hasRecordsForDate(dateStr)
     })
   }
 
@@ -203,27 +222,51 @@ const calendarDays = computed(() => {
   const lastDay = lastDate.getDay()
   for (let i = 1; i < 7 - lastDay; i++) {
     const d = new Date(currentYear.value, currentMonth.value + 1, i)
+    const dateStr = d.toISOString().split('T')[0]
     days.push({
-      date: d.toISOString().split('T')[0],
+      date: dateStr,
       current: false,
-      hasClasses: !!classesByDate.value[d.toISOString().split('T')[0]]
+      hasRecords: hasRecordsForDate(dateStr)
     })
   }
 
   return days
 })
 
-// 선택된 날짜의 수업 목록
-const selectedDateClasses = computed(() => {
-  return classesByDate.value[selectedDate.value] || []
+// 선택된 날짜의 출결 기록 목록
+const selectedDateRecords = computed(() => {
+  if (!selectedDate.value) return []
+  
+  // 출석 기록과 결석 기록을 합쳐서 반환
+  const attendances = (attendancesByDate.value[selectedDate.value] || [])
+    .map(att => ({ ...att, type: 'attendance' }))
+  
+  const absences = (absencesByDate.value[selectedDate.value] || [])
+    .map(abs => ({ ...abs, type: 'absence' }))
+  
+  // 모든 기록을 합쳐서 반환
+  return [...attendances, ...absences].sort((a, b) => {
+    // 학생 이름 순으로 정렬
+    const nameA = getStudentName(a.studentId)
+    const nameB = getStudentName(b.studentId)
+    return nameA.localeCompare(nameB)
+  })
 })
+
+// 날짜별 출결 기록 여부 확인
+function hasRecordsForDate(date) {
+  return (
+    (attendancesByDate.value[date] && attendancesByDate.value[date].length > 0) ||
+    (absencesByDate.value[date] && absencesByDate.value[date].length > 0)
+  )
+}
 
 // 날짜 변경 함수
 function changeMonth(delta) {
   const newDate = new Date(currentYear.value, currentMonth.value + delta, 1)
   currentYear.value = newDate.getFullYear()
   currentMonth.value = newDate.getMonth()
-  fetchMonthClasses()
+  fetchMonthRecords()
 }
 
 function selectDate(date) {
@@ -234,6 +277,59 @@ function isSelectedDate(date) {
   return selectedDate.value === date
 }
 
+// 학생 이름 가져오기
+function getStudentName(studentId) {
+  const student = studentList.value.find(s => s.id === studentId)
+  return student ? student.name : `학생 #${studentId}`
+}
+
+// 출결 상태 텍스트
+function getStatusText(record) {
+  if (record.type === 'absence') {
+    return '결석'
+  } else {
+    const now = dayjs()
+    const recordDate = dayjs(record.attendanceDate)
+    
+    if (recordDate.isAfter(now, 'day')) {
+      return '예정'
+    }
+
+    // 수업 종료 시간 확인
+    if (record.endTime) {
+      const endTime = dayjs(`${record.attendanceDate} ${record.endTime}`)
+      
+      if (now.isAfter(endTime)) {
+        return '완료'
+      } else {
+        return '진행중'
+      }
+    }
+    
+    return record.makeup ? '보강' : '출석'
+  }
+}
+
+// 출결 상태 스타일
+function getStatusStyle(record) {
+  const status = getStatusText(record)
+  switch (status) {
+    case '예정':
+      return 'bg-gray-100 text-gray-600'
+    case '진행중':
+      return 'bg-yellow-100 text-yellow-600'
+    case '완료':
+      return 'bg-blue-100 text-blue-600'
+    case '결석':
+      return 'bg-red-100 text-red-600'
+    case '출석':
+    case '보강':
+      return 'bg-green-100 text-green-600'
+    default:
+      return 'bg-gray-100 text-gray-600'
+  }
+}
+
 // 날짜 포맷팅
 function formatDate(dateStr) {
   const date = new Date(dateStr)
@@ -241,90 +337,49 @@ function formatDate(dateStr) {
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 (${days[date.getDay()]})`
 }
 
-// 수업 상태 관련 함수 수정
-function classStatusText(cls) {
-  const now = dayjs()
-  const classDate = dayjs(cls.classDate)
-  const todayAttendances = attendanceByDate.value[cls.classDate] || []
-  const hasAttendance = todayAttendances.some(att => 
-    att.studentId === cls.student.id && 
-    att.attendanceDate === cls.classDate
-  )
-  
-  if (classDate.isAfter(now, 'day')) {
-    return '예정'
-  }
-  
-  if (classDate.isBefore(now, 'day')) {
-    return hasAttendance ? '완료' : '결석'
-  }
-  
-  const currentTime = now.format('HH:mm')
-  if (currentTime < cls.startTime) {
-    return '예정'
-  } else if (currentTime > cls.endTime) {
-    return hasAttendance ? '완료' : '결석'
-  } else {
-    return hasAttendance ? '진행중' : '미출석'
-  }
-}
-
-function classStatusStyle(cls) {
-  const status = classStatusText(cls)
-  switch (status) {
-    case '예정':
-      return 'bg-gray-100 text-gray-600'
-    case '진행중':
-      return 'bg-green-100 text-green-600'
-    case '완료':
-      return 'bg-blue-100 text-blue-600'
-    case '결석':
-      return 'bg-red-100 text-red-600'
-    case '미출석':
-      return 'bg-yellow-100 text-yellow-600'
-    default:
-      return 'bg-gray-100 text-gray-600'
-  }
-}
-
 // API 호출
-async function fetchMonthClasses() {
+async function fetchMonthRecords() {
   try {
     const startDate = dayjs(new Date(currentYear.value, currentMonth.value, 1))
       .format('YYYY-MM-DD')
     const endDate = dayjs(new Date(currentYear.value, currentMonth.value + 1, 0))
       .format('YYYY-MM-DD')
     
-    // 수업 데이터 조회
-    const classResponse = await axios.get('/api/classes/range', {
+    // 학생 목록 조회
+    if (studentList.value.length === 0) {
+      const studentsResponse = await axios.get('/api/students')
+      studentList.value = studentsResponse.data
+    }
+    
+    // 출석 기록 조회
+    const attendanceResponse = await axios.get('/api/attendance/range', {
       params: { startDate, endDate }
     })
     
-    // 날짜별로 수업 데이터 정리
-    classesByDate.value = classResponse.data.reduce((acc, cls) => {
-      const date = cls.classDate
+    // 날짜별로 출석 데이터 정리
+    attendancesByDate.value = attendanceResponse.data.reduce((acc, att) => {
+      const date = att.attendanceDate
       if (!acc[date]) {
         acc[date] = []
       }
-      acc[date].push(cls)
+      acc[date].push(att)
       return acc
     }, {})
 
-    // 출석 데이터 조회
-    const attendancePromises = Array.from(new Set(classResponse.data.map(cls => cls.student.id)))
-      .map(studentId => axios.get(`/api/attendance/${studentId}`))
-    const attendanceResponses = await Promise.all(attendancePromises)
+    // 결석 기록 조회
+    const absenceResponse = await axios.get('/api/absence/range', {
+      params: { startDate, endDate }
+    })
     
-    // 날짜별 출석 데이터 정리
-    attendanceByDate.value = attendanceResponses.flatMap(res => res.data)
-      .reduce((acc, att) => {
-        const date = att.attendanceDate
-        if (!acc[date]) {
-          acc[date] = []
-        }
-        acc[date].push(att)
-        return acc
-      }, {})
+    // 날짜별로 결석 데이터 정리
+    absencesByDate.value = absenceResponse.data.reduce((acc, abs) => {
+      const date = abs.absenceDate
+      if (!acc[date]) {
+        acc[date] = []
+      }
+      acc[date].push(abs)
+      return acc
+    }, {})
 
   } catch (error) {
     console.error('데이터 조회 실패:', error)
@@ -332,10 +387,8 @@ async function fetchMonthClasses() {
   }
 }
 
-
-
 // 초기 데이터 로드
 onMounted(() => {
-  fetchMonthClasses()
+  fetchMonthRecords()
 })
 </script>

@@ -46,12 +46,12 @@ export default [
       {
         to: '/manage-tests',
         icon: mdiChatQuestion,
-        label: '문제 관리'
+        label: '시험 관리'
       },
       {
         to: '/tests-results',
         icon: mdiHeadQuestion,
-        label: '문제 결과'
+        label: '시험 결과'
       }
     ]
   },
