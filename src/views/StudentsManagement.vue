@@ -52,12 +52,20 @@
               >
                 <div class="flex justify-between items-start mb-2">
                   <div class="font-semibold text-gray-900">{{ student.name }}</div>
-                  <button
-                    class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                    @click.stop="goEditStudent(student.id)"
-                  >
-                    수정
-                  </button>
+                  <div class="flex items-center gap-1">
+                    <button
+                      class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                      @click.stop="goEditStudent(student.id)"
+                    >
+                      수정
+                    </button>
+                    <button
+                      class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                      @click.stop="confirmDeleteStudent(student)"
+                    >
+                      삭제
+                    </button>
+                  </div>
                 </div>
                 <div class="text-sm text-gray-600">
                   ID : {{ student.id }}
@@ -65,7 +73,6 @@
                   {{ student.daysOfWeek.map(day => dayMapping[day]).join(', ') }}
                 </div>
               </div>
-
               <!-- 페이지네이션 -->
               <div v-if="totalPages > 1" class="flex justify-between items-center pt-4 border-t border-gray-200">
                 <button 
@@ -296,6 +303,32 @@
               
               <div v-if="studentMakeupAttendances.length === 0" class="text-center py-6 text-gray-500">
                 보강 기록이 없습니다.
+              </div>
+            </div>
+
+            <!-- 삭제 확인 대화상자 -->
+            <div v-if="deleteConfirmDialog" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div class="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">학생 삭제 확인</h3>
+                <p class="text-gray-700 mb-6">
+                  정말 <span class="font-semibold">{{ studentToDelete?.name }}</span> 학생을 삭제하시겠습니까?
+                  <br>
+                  <span class="text-red-600 text-sm">이 작업은 되돌릴 수 없습니다.</span>
+                </p>
+                <div class="flex justify-end gap-3">
+                  <button 
+                    class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                    @click="cancelDelete"
+                  >
+                    취소
+                  </button>
+                  <button 
+                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                    @click="deleteStudent"
+                  >
+                    삭제
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -565,6 +598,49 @@ function nextPage() {
   if (currentPage.value < totalPages.value) {
     currentPage.value++
   }
+}
+
+// 학생 삭제 관련 상태
+const deleteConfirmDialog = ref(false)
+const studentToDelete = ref(null)
+
+// 삭제 확인 대화상자 표시
+function confirmDeleteStudent(student) {
+  studentToDelete.value = student
+  deleteConfirmDialog.value = true
+}
+
+// 학생 삭제 실행
+async function deleteStudent() {
+  if (!studentToDelete.value) return
+  
+  try {
+    await axios.delete(`/api/students/${studentToDelete.value.id}`)
+    
+    // 목록에서 학생 제거
+    students.value = students.value.filter(s => s.id !== studentToDelete.value.id)
+    
+    // 현재 선택된 학생이 삭제된 학생이면 선택 초기화
+    if (selected.value && selected.value.id === studentToDelete.value.id) {
+      selected.value = null
+    }
+    
+    // 상태 초기화
+    deleteConfirmDialog.value = false
+    studentToDelete.value = null
+    
+    // 성공 메시지
+    alert('학생이 삭제되었습니다.')
+  } catch (err) {
+    console.error('학생 삭제 실패:', err)
+    alert('학생 삭제에 실패했습니다.')
+  }
+}
+
+// 삭제 취소
+function cancelDelete() {
+  deleteConfirmDialog.value = false
+  studentToDelete.value = null
 }
 
 // 검색어가 변경되면 첫 페이지로 이동

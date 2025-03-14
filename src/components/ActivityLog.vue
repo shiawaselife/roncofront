@@ -10,7 +10,7 @@ const loadLogsFromStorage = () => {
 }
 
 const logs = ref(loadLogsFromStorage())
-const isMinimized = ref(false)
+const isMinimized = ref(true)
 const webSocketStore = useWebSocketStore()
 
 // 토글 함수

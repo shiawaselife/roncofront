@@ -188,49 +188,76 @@ const attendancesByDate = ref({}) // { '2024-01-01': [...attendance_records] }
 const absencesByDate = ref({}) // { '2024-01-01': [...absence_records] }
 const studentList = ref([]) // 학생 목록
 
+function formatISODate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // 달력 날짜 계산
 const calendarDays = computed(() => {
-  const date = new Date(currentYear.value, currentMonth.value, 1)
-  const days = []
-
-  // 이전 달의 마지막 날짜들
-  const firstDay = date.getDay()
-  const prevMonthLastDate = new Date(currentYear.value, currentMonth.value, 0)
-  for (let i = firstDay - 1; i >= 0; i--) {
-    const d = new Date(currentYear.value, currentMonth.value - 1, prevMonthLastDate.getDate() - i)
-    const dateStr = d.toISOString().split('T')[0]
-    days.push({
-      date: dateStr,
-      current: false,
-      hasRecords: hasRecordsForDate(dateStr)
-    })
+  // 현재 월의 첫 날과 마지막 날
+  const firstDateOfMonth = new Date(currentYear.value, currentMonth.value, 1);
+  const lastDateOfMonth = new Date(currentYear.value, currentMonth.value + 1, 0);
+  
+  const days = [];
+  
+  // 첫 날의 요일 (0: 일요일, 1: 월요일, ..., 6: 토요일)
+  const firstDayOfMonth = firstDateOfMonth.getDay();
+  if (firstDayOfMonth > 0) {
+    const prevMonthLastDate = new Date(currentYear.value, currentMonth.value, 0);
+    const prevMonthLastDay = prevMonthLastDate.getDate();
+    
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      const day = prevMonthLastDay - (firstDayOfMonth - 1) + i;
+      const prevDate = new Date(
+        prevMonthLastDate.getFullYear(),
+        prevMonthLastDate.getMonth(),
+        day
+      );
+      const dateStr = formatISODate(prevDate)
+      console.log(dateStr, prevDate, day)
+      
+      days.push({
+        date: dateStr,
+        current: false,
+        hasRecords: hasRecordsForDate(dateStr)
+      });
+    }
   }
-
+  
+  
   // 현재 달의 날짜들
-  const lastDate = new Date(currentYear.value, currentMonth.value + 1, 0)
-  for (let i = 1; i <= lastDate.getDate(); i++) {
-    const d = new Date(currentYear.value, currentMonth.value, i)
-    const dateStr = d.toISOString().split('T')[0]
+  for (let i = 1; i <= lastDateOfMonth.getDate(); i++) {
+    const curDate = new Date(currentYear.value, currentMonth.value, i);
+    const dateStr = formatISODate(curDate);
+    
     days.push({
       date: dateStr,
       current: true,
       hasRecords: hasRecordsForDate(dateStr)
-    })
+    });
   }
-
-  // 다음 달의 시작 날짜들
-  const lastDay = lastDate.getDay()
-  for (let i = 1; i < 7 - lastDay; i++) {
-    const d = new Date(currentYear.value, currentMonth.value + 1, i)
-    const dateStr = d.toISOString().split('T')[0]
-    days.push({
-      date: dateStr,
-      current: false,
-      hasRecords: hasRecordsForDate(dateStr)
-    })
+  
+  // 다음 달의 날짜들을 채우기
+  const lastDayOfMonth = lastDateOfMonth.getDay();
+  const daysToAdd = 6 - lastDayOfMonth;
+  
+  if (daysToAdd > 0) {
+    for (let i = 1; i <= daysToAdd; i++) {
+      const nextDate = new Date(currentYear.value, currentMonth.value + 1, i);
+      const dateStr = formatISODate(nextDate);
+      
+      days.push({
+        date: dateStr,
+        current: false,
+        hasRecords: hasRecordsForDate(dateStr)
+      });
+    }
   }
-
-  return days
+  
+  return days;
 })
 
 // 선택된 날짜의 출결 기록 목록

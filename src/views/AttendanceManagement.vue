@@ -101,7 +101,7 @@
                             @click="markAttendance(student)"
                             class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200"
                           >
-                            등원
+                            +
                           </button>
                         </div>
                       </div>
@@ -131,12 +131,41 @@
 
                   <!-- 하원 -->
                   <div>
-                    <h3 class="font-semibold mb-3 text-gray-700">하원</h3>
+                    <div class="flex flex-wrap items-center justify-between mb-3 gap-2">
+                      <h3 class="font-semibold text-gray-700">하원</h3>
+                      <div class="flex flex-wrap items-center gap-4">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            v-model="showCompletedClasses"
+                            class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" 
+                          />
+                          <span class="text-sm text-gray-600">종료된 수업 보기</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            v-model="showOngoingClasses"
+                            class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" 
+                          />
+                          <span class="text-sm text-gray-600">수업중인 수업 보기</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            v-model="showAbsences"
+                            class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" 
+                          />
+                          <span class="text-sm text-gray-600">결석 보기</span>
+                        </label>
+                      </div>
+                    </div>
                     <div class="space-y-3">
                       <div 
                         v-for="attendance in paginatedAttendances"
                         :key="attendance.id"
                         class="p-4 bg-gray-50 rounded-lg border border-gray-200"
+                        v-show="shouldShowAttendance(attendance)"
                       >
                         <div class="flex justify-between items-center h-full">
                           <div class="flex flex-col justify-between h-full">
@@ -205,6 +234,7 @@
                         v-for="absence in paginatedAbsences"
                         :key="`absence-${absence.studentId}`"
                         class="p-4 bg-gray-50 rounded-lg border border-gray-200"
+                        v-show="showAbsences"
                       >
                         <div class="flex justify-between items-center h-full">
                           <div class="flex flex-col justify-between h-full">
@@ -250,7 +280,7 @@
                         </button>
                       </div>
 
-                      <div v-if="filteredAttendances.length === 0 && filteredAbsences.length === 0" class="text-center py-4 text-gray-500">
+                      <div v-if="noVisibleItems" class="text-center py-4 text-gray-500">
                         표시할 학생이 없습니다.
                       </div>
                     </div>
@@ -558,6 +588,11 @@ const searchQuery = ref('')             // 검색어
 const selectedRange = ref('week')
 const selectedOrder = ref('asc')
 
+// 수업 상태 필터
+const showCompletedClasses = ref(true)  // 종료된 수업 보기 체크박스
+const showOngoingClasses = ref(true)    // 수업중인 수업 보기 체크박스
+const showAbsences = ref(true)          // 결석 보기 체크박스 (NEW)
+
 // 시간 조정
 const selectedMinutes = ref(10)         // 기본값은 10분
 
@@ -582,6 +617,8 @@ const studentAttendances = ref([])
 const currentStudentAttendancePage = ref(1)
 const studentAttendancePerPage = ref(5)
 
+let statusUpdateTimer = null
+
 // --- 라이프사이클 훅 ---
 onMounted(() => {
   webSocketStore.subscribe('/topic/activity-logs', handleActivityLog)
@@ -589,11 +626,32 @@ onMounted(() => {
   fetchTodayAttendance()
   fetchTodayAbsences()
   fetchMakeupAttendances()
+
+  setupStatusUpdateTimer()
 })
 
 onUnmounted(() => {
   webSocketStore.unsubscribe('/topic/activity-logs', handleActivityLog)
+  if (statusUpdateTimer) {
+    clearInterval(statusUpdateTimer)
+    statusUpdateTimer = null
+  }
 })
+
+function setupStatusUpdateTimer() {
+  // 먼저 초기 지연 시간을 계산 (다음 분의 0초까지)
+  const now = new Date()
+  const secondsUntilNextMinute = 60 - now.getSeconds()
+  
+  // 먼저 다음 분의 0초에 맞춰 한 번 실행
+  setTimeout(() => {
+    // 출결 상태 업데이트
+    fetchTodayAttendance()
+    
+    // 이후 매 분마다 실행되는 타이머 설정
+    statusUpdateTimer = setInterval(fetchTodayAttendance, 60 * 1000)
+  }, secondsUntilNextMinute * 1000)
+}
 
 // --- API 호출 함수 ---
 async function fetchStudents() {
@@ -711,6 +769,33 @@ function isClassCompleted(attendance) {
   
   return now.isAfter(endTime)
 }
+
+// 수업 상태에 따라 표시 여부 결정
+function shouldShowAttendance(attendance) {
+  const completed = isClassCompleted(attendance)
+  
+  if (completed && showCompletedClasses.value) {
+    return true
+  }
+  
+  if (!completed && showOngoingClasses.value) {
+    return true
+  }
+  
+  return false
+}
+
+// 표시할 항목이 없는지 확인하는 계산된 속성
+const noVisibleItems = computed(() => {
+  // 수업 상태 필터에 따라 보여지는 출석 항목 수
+  const visibleAttendancesCount = visibleAttendances.value.length
+  
+  // 결석 보기 필터에 따라 보여지는 결석 항목 수
+  const visibleAbsencesCount = showAbsences.value ? filteredAbsences.value.length : 0
+  
+  // 모두 0이면 표시할 항목이 없음
+  return visibleAttendancesCount === 0 && visibleAbsencesCount === 0
+})
 
 // --- 출결 관련 기능 ---
 // 등원 버튼 클릭 - 모달 표시
@@ -936,6 +1021,11 @@ const filteredAttendances = computed(() => {
   })
 })
 
+// --- 필터링된 출석 목록 (수업 상태 필터 적용) ---
+const visibleAttendances = computed(() => {
+  return filteredAttendances.value.filter(attendance => shouldShowAttendance(attendance))
+})
+
 // --- 결석한 학생 목록 ---
 const filteredAbsences = computed(() => {
   return absenceList.value.filter(absence => {
@@ -955,7 +1045,8 @@ const paginatedNotAttendedStudents = computed(() => {
 
 const paginatedAttendances = computed(() => {
   const start = (currentAttendedPage.value - 1) * attendancePerPage.value
-  return filteredAttendances.value.slice(start, start + attendancePerPage.value)
+  // 여기서는 visibleAttendances를 사용하여 필터링된 출석 목록만 페이지네이션합니다
+  return visibleAttendances.value.slice(start, start + attendancePerPage.value)
 })
 
 const paginatedAbsences = computed(() => {
@@ -974,7 +1065,11 @@ const totalNotAttendedPages = computed(() =>
 )
 
 const totalAttendedPages = computed(() => {
-  const totalItems = filteredAttendances.value.length + filteredAbsences.value.length
+  // 표시 중인 출석 항목과 결석 항목의 총 수
+  const visibleAttendancesCount = visibleAttendances.value.length
+  const visibleAbsencesCount = showAbsences.value ? filteredAbsences.value.length : 0
+  const totalItems = visibleAttendancesCount + visibleAbsencesCount
+  
   return Math.ceil(totalItems / attendancePerPage.value) || 1
 })
 
@@ -1003,7 +1098,7 @@ watch(searchQuery, () => {
 })
 
 // 필터 변경 시 페이지 리셋
-watch(showOnlyTodayClasses, () => {
+watch([showOnlyTodayClasses, showCompletedClasses, showOngoingClasses, showAbsences], () => {
   currentNotAttendedPage.value = 1
   currentAttendedPage.value = 1
 })

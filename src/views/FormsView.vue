@@ -52,12 +52,6 @@ const validateForm = () => {
   const requiredFields = [
     'name',
     'phone',
-    'parent',
-    'startTime',
-    'endTime',
-    'curriculum',
-    'residence',
-    'birthday'
   ]
   const missing = requiredFields.filter(field => !form[field] || form[field].toString().trim() === '')
 
@@ -112,7 +106,7 @@ const submit = async () => {
               <FormControl
                 v-model="form.name"
                 :icon="mdiAccount"
-                placeholder="이름"
+                placeholder="이름(필수)"
                 class="w-full"
               />
 
@@ -121,7 +115,7 @@ const submit = async () => {
                 v-model="form.phone"
                 type="tel"
                 :icon="mdiPhone"
-                placeholder="전화번호"
+                placeholder="전화번호(필수)"
                 class="w-full"
               />
 
@@ -138,29 +132,39 @@ const submit = async () => {
             <!-- 2열 -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
               <!-- 생년월일 -->
-              <FormControl
-                v-model="form.birthday"
-                type="date"
-                :icon="mdiCalendar"
-                placeholder="생년월일"
-                class="w-full"
-              />
+              <div>
+                <label class="block font-bold mb-2" for="birthday">생년월일</label>
+                <FormControl
+                  id="birthday"
+                  v-model="form.birthday"
+                  type="date"
+                  :icon="mdiCalendar"
+                  class="w-full"
+                />
+              </div>
 
               <!-- 등록일 (optional) -->
-              <FormControl
-                v-model="form.regDate"
-                type="date"
-                placeholder="등록일 (선택)"
-                class="w-full"
-              />
+              <div>
+                <label class="block font-bold mb-2" for="regDate">등록일 (선택)</label>
+                <FormControl
+                  id="regDate"
+                  v-model="form.regDate"
+                  type="date"
+                  class="w-full"
+                />
+              </div>
 
               <!-- 거주지 -->
-              <FormControl
-                v-model="form.residence"
-                :icon="mdiHome"
-                placeholder="거주지"
-                class="w-full"
-              />
+              <div>
+                <label class="block font-bold mb-2" for="residence">거주지</label>
+                <FormControl
+                  id="residence"
+                  v-model="form.residence"
+                  :icon="mdiHome"
+                  placeholder="거주지"
+                  class="w-full"
+                />
+              </div>
             </div>
           </FormField>
 
@@ -168,15 +172,6 @@ const submit = async () => {
           <FormField label="수업 정보">
             <!-- 커리큘럼, 요일 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block font-bold mb-2" for="curriculum">커리큘럼</label>
-                <FormControl
-                  id="curriculum"
-                  v-model="form.curriculum"
-                  placeholder="ex) C언어, 아두이노, 파이썬..."
-                  class="w-full"
-                />
-              </div>
               <div>
                 <label class="block font-bold mb-2" for="daysOfWeek">수업 요일 (복수 선택)</label>
                 <!-- 요일 체크박스 -->
@@ -200,36 +195,6 @@ const submit = async () => {
           </FormField>
 
           <BaseDivider />
-
-          <!-- 추가 정보 -->
-          <FormField label="추가 정보" help="기타 특이사항 등을 입력하세요.">
-            <FormControl
-              type="textarea"
-              v-model="form.information"
-              class="w-full"
-            />
-          </FormField>
-
-          <!-- 남은 횟수 (timeLeft) -->
-          <FormField label="남은 횟수">
-            <FormControl
-              type="number"
-              v-model.number="form.timeLeft"
-              min="0"
-              class="w-full"
-            />
-          </FormField>
-
-          <BaseDivider />
-
-          <!-- 전화번호(집) -->
-          <FormField label="집 전화번호 (optional)">
-            <FormControl
-              v-model="form.homePhone"
-              placeholder="ex) 02-xxx-xxxx"
-              class="w-full"
-            />
-          </FormField>
 
           <!-- 폼 제출 버튼 -->
           <div class="mt-4">
